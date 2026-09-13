@@ -61,6 +61,21 @@ pre { background:var(--inset); border:1px solid var(--border); padding:12px; bor
 code { background:var(--inset); padding:2px 6px; border-radius:3px; font-size:16px; color:var(--phos) }
 .hint, .dim { color:var(--dim); font-size:16px }
 
+/* corpse ticker — stock tape of the dead, under the header */
+.ticker { border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  background:var(--inset); overflow:hidden; margin:18px 0 4px; padding:7px 0;
+  box-shadow:inset 0 0 14px rgba(0,0,0,.5) }
+.tape { display:inline-flex; white-space:nowrap; animation:tape 75s linear infinite; will-change:transform }
+.ticker:hover .tape { animation-play-state:paused }
+@keyframes tape { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.tape span { display:inline-block }
+.tape a { color:var(--dim); text-decoration:none; margin-right:34px; font-size:16px; letter-spacing:1px }
+.tape a:hover { color:var(--phos) }
+.tape .ix { color:var(--candle) }
+.tape .doomed .ix { color:var(--blood) }
+.tape .hale .ix { color:var(--phos) }
+.tape .sep { color:#4d4570; margin-right:34px }
+
 #result { display:none }
 .plate { display:inline-block; background:linear-gradient(#3d3320,#241d10); border:1px solid #554524;
   color:var(--candle); font-size:14px; letter-spacing:4px; padding:2px 16px; border-radius:3px;
@@ -73,15 +88,6 @@ table { width:100%; border-collapse:collapse; font-size:17px; margin-top:8px }
 th { text-align:left; color:var(--candle); font-weight:400; padding:6px 8px;
   border-bottom:1px solid var(--border); font-family:'IM Fell English',serif; letter-spacing:1px }
 td { padding:6px 8px; border-bottom:1px solid #1e1830 }
-.fate-dead td:first-child::before { content:'☠ '; color:var(--blood) }
-.fate-buried td:first-child::before { content:'⚰ '; color:var(--dim) }
-.fate-cold td:first-child::before { content:'❄ '; color:var(--blue) }
-.fate-dead td:nth-child(4), .fate-buried td:nth-child(4) { color:var(--blood) }
-.fate-cold td:nth-child(4) { color:var(--candle) }
-.fate-cooling td:nth-child(4) { color:var(--blue) }
-.stillborn { color:var(--dim); font-size:14px; font-style:italic }
-.epitaph { font-family:'IM Fell English',serif; font-style:italic; color:var(--dim) }
-
 .steps { counter-reset:step; padding-left:0; list-style:none }
 .steps li { margin:16px 0; padding-left:32px; position:relative }
 .steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:3px;
@@ -113,6 +119,10 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
 <main>
   <h1><span class="sk">💀</span> NECR<span class="zap">O</span>METER</h1>
   <p class="tag">an instrument for measuring how dead your code is.</p>
+
+  <div class="ticker" id="ticker" style="display:none">
+    <div class="tape"><span id="tape1"></span><span id="tape2"></span></div>
+  </div>
 
   <label class="lbl" for="subject">subject for examination</label>
   <form id="f">
@@ -146,7 +156,6 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
       <p class="dim"><button class="ghost" id="dl">download necrometer.svg</button> — commit next to your README. frozen in time; it will never change. like the dead.</p>
     </details>
 
-    <div id="graveyard"></div>
   </section>
 
   <section id="hall">
@@ -237,38 +246,7 @@ function show(r) {
     `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = WORKFLOW(r.subject);
 
-  if (r.corpses.length) {
-    $('graveyard').innerHTML = `<h2>the graveyard</h2><p class="dim">the dearly departed, by time since last pulse.</p><table><tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}</table>`;
-    epitaphs(r, $('token').value.trim() || null).then(() => {
-      if (current && current.r === r)
-        $('graveyard').querySelector('table').innerHTML =
-          `<tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}`;
-    });
-  } else {
-    $('graveyard').innerHTML = '<h2>the graveyard</h2><p class="dim">no corpses found. suspicious.</p>';
-  }
   $('result').style.display = 'block';
-}
-
-function corpseRows(r) {
-  return r.corpses.map(c =>
-    `<tr class="fate-${Necrometer.FATE_LABEL[c.fate]}"><td><a href="${c.url}">${esc(c.name)}</a>${c.stillborn ? ' <span class="stillborn">stillborn</span>' : ''}</td><td>${c.daysIdle}d</td><td>${c.stars}</td><td>${Necrometer.FATE_LABEL[c.fate]}</td><td class="epitaph">${c.epitaph ? '"' + esc(c.epitaph) + '"' : '…'}</td></tr>`).join('');
-}
-
-// Last words: the repo's final commit message. Top corpses only — one API call each.
-async function epitaphs(r, token) {
-  const heads = { Accept: 'application/vnd.github+json' };
-  if (token) heads.Authorization = `Bearer ${token}`;
-  await Promise.all(r.corpses.slice(0, 10).map(async (c) => {
-    const m = c.url.match(/github\.com\/([^/]+)\/([^/]+)/);
-    if (!m) return;
-    try {
-      const resp = await fetch(`https://api.github.com/repos/${m[1]}/${m[2]}/commits?per_page=1`, { headers: heads });
-      if (!resp.ok) return;
-      const [first] = await resp.json();
-      c.epitaph = (first?.commit?.message || '').split('\n')[0].slice(0, 48) || null;
-    } catch (_) {}
-  }));
 }
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -287,8 +265,16 @@ $('copywf').addEventListener('click', copier($('workflow')));
 const u = new URLSearchParams(location.search).get('u');
 if (u) { $('subject').value = u; run(u); }
 
-// hall of corpses — static JSON regenerated weekly by an Action in this repo
+// hall of corpses — static JSON regenerated weekly by an Action in this repo.
+// Feeds two displays: the header corpse ticker and the full registry table.
 fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) => {
+  const cls = (h) => h.index >= 80 ? 'doomed' : h.index < 15 ? 'hale' : '';
+  const tape = hall.map((h) =>
+    `<a href="?u=${encodeURIComponent(h.name)}" class="${cls(h)}">☠ ${esc(h.name)} <span class="ix">${h.index}%</span></a><span class="sep">·</span>`
+  ).join('');
+  $('tape1').innerHTML = tape;
+  $('tape2').innerHTML = tape;
+  $('ticker').style.display = 'block';
   $('hallrows').innerHTML = '<table><tr><th></th><th>account</th><th>necrosis</th><th>title</th><th>corpses</th></tr>'
     + hall.map((h, i) =>
       `<tr><td class="dim">${i + 1}</td><td><a href="?u=${encodeURIComponent(h.name)}">${esc(h.name)}</a></td>`
