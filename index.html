@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>necrometer — how dead are your repos?</title>
+<meta property="og:title" content="the necrometer">
+<meta property="og:description" content="measures how dead your github repos are — generates a card for your README">
+<meta property="og:url" content="https://necrometer.dev">
+<style>
+:root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --dim:#8b949e; --accent:#a371f7; --red:#f85149; --amber:#d29922; --blue:#58a6ff }
+* { box-sizing:border-box }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; margin:0 }
+main { max-width:680px; margin:48px auto; padding:0 16px }
+h1 { letter-spacing:3px; font-size:26px; margin-bottom:4px }
+h1 .dial { color:var(--accent) }
+h2 { font-size:15px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-top:36px }
+a { color:var(--accent) }
+.tag { color:var(--dim); margin-top:0 }
+form { display:flex; gap:8px; margin:24px 0 }
+input { background:var(--panel); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:6px; flex:1; font-size:14px; min-width:0 }
+button { background:var(--accent); color:var(--bg); border:0; padding:10px 16px; border-radius:6px; font-weight:600; cursor:pointer; white-space:nowrap }
+button.ghost { background:var(--panel); color:var(--text); border:1px solid var(--border) }
+pre { background:var(--panel); border:1px solid var(--border); padding:12px; border-radius:6px; overflow-x:auto; font-size:12px; white-space:pre-wrap; word-break:break-all }
+code { background:var(--panel); padding:2px 5px; border-radius:4px; font-size:12px }
+.hint, .dim { color:var(--dim); font-size:13px }
+#result { display:none }
+#result img { display:block; margin:12px 0; max-width:100%; border-radius:6px }
+table { width:100%; border-collapse:collapse; font-size:14px; margin-top:8px }
+th { text-align:left; color:var(--dim); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border) }
+td { padding:6px 8px; border-bottom:1px solid #21262d }
+.fate-dead td:last-child, .fate-buried td:last-child { color:var(--red) }
+.fate-cold td:last-child { color:var(--amber) }
+.fate-cooling td:last-child { color:var(--blue) }
+.stillborn { color:var(--dim); font-size:11px; font-style:italic }
+.steps { counter-reset:step; padding-left:0; list-style:none }
+.steps li { margin:14px 0; padding-left:28px; position:relative }
+.steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:1px; width:18px; height:18px; background:var(--panel); border:1px solid var(--border); border-radius:50%; font-size:11px; display:flex; align-items:center; justify-content:center; color:var(--dim) }
+details { margin-top:28px; border:1px solid var(--border); border-radius:6px; padding:12px 16px }
+summary { cursor:pointer; color:var(--text); font-weight:600 }
+.row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 }
+#status { color:var(--dim); font-size:13px; min-height:18px }
+#status.err { color:var(--red) }
+footer { margin:56px 0 24px; color:var(--dim); font-size:12px; border-top:1px solid var(--border); padding-top:16px }
+</style>
+</head>
+<body>
+<main>
+  <h1><span class="dial">&#9760;</span> THE NECROMETER</h1>
+  <p class="tag">Measures how dead your GitHub repos are. Generates a card for your README — nothing to install, nothing hosted.</p>
+
+  <form id="f">
+    <input id="subject" placeholder="github username or org" autofocus autocomplete="off">
+    <button type="submit">exhume</button>
+  </form>
+  <div id="status"></div>
+
+  <section id="result">
+    <img id="card" alt="necrometer card">
+    <p class="dim" id="summary"></p>
+
+    <h2>put it in your README</h2>
+    <ol class="steps">
+      <li><button id="dl">download necrometer.svg</button> — save it to your repo (next to the README)</li>
+      <li>paste this into your README.md:
+        <div class="row"><pre id="snippet" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copy">copy</button></div>
+      </li>
+    </ol>
+
+    <details>
+      <summary>make it update itself (optional)</summary>
+      <p class="dim">Drop this in <code>.github/workflows/necrometer.yml</code> — GitHub re-renders your card daily. Still nothing hosted by anyone.</p>
+      <pre id="workflow"></pre>
+      <button class="ghost" id="copywf">copy workflow</button>
+    </details>
+
+    <div id="graveyard"></div>
+  </section>
+
+  <footer>
+    necrometer.dev — client-side only; your API calls go straight to GitHub.
+    source: <a href="https://github.com/necrometer-dev/necrometer-dev.github.io">necrometer-dev</a>
+  </footer>
+</main>
+
+<script src="necrometer.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const status = (msg, isErr) => { $('status').textContent = msg; $('status').className = isErr ? 'err' : ''; };
+let current = null;
+
+const WORKFLOW = (u) => `name: necrometer
+on:
+  schedule: [{cron: "17 6 * * *"}]
+  workflow_dispatch:
+permissions: { contents: write }
+jobs:
+  necrometer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sSL https://necrometer.dev/necrometer.js -o /tmp/n.js
+          node /tmp/n.js "$GITHUB_REPOSITORY_OWNER" necrometer.svg
+      - run: |
+          git config user.name "necrometer[bot]"
+          git config user.email "bot@necrometer.dev"
+          git add necrometer.svg
+          git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
+          git push`;
+
+async function run(name) {
+  name = name.trim().replace(/^@/, '');
+  if (!name) return;
+  status('digging up ' + name + '…');
+  $('result').style.display = 'none';
+  try {
+    const repos = await Necrometer.fetchRepos(name, (n, left) =>
+      status(`digging… ${n} repos on this page${left != null ? ` · ${left} API calls left` : ''}`));
+    const r = Necrometer.analyze(name, repos);
+    current = { r, svg: Necrometer.renderCard(r) };
+    show(r);
+    status('');
+    history.replaceState(null, '', '?u=' + encodeURIComponent(name));
+  } catch (e) {
+    status(e.message || String(e), true);
+  }
+}
+
+function show(r) {
+  const blob = new Blob([current.svg], { type: 'image/svg+xml' });
+  $('card').src = URL.createObjectURL(blob);
+  $('summary').textContent = r.total === 0
+    ? 'no repos — nothing to bury'
+    : `${r.index}% necrotic — ${r.title} · ${r.total} repos · ${r.starsStranded} stars stranded`;
+  $('snippet').textContent =
+    `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
+  $('workflow').textContent = WORKFLOW(r.subject);
+
+  if (r.corpses.length) {
+    const rows = r.corpses.map(c =>
+      `<tr class="fate-${Necrometer.FATE_LABEL[c.fate]}"><td><a href="${c.url}">${esc(c.name)}</a>${c.stillborn ? ' <span class="stillborn">stillborn</span>' : ''}</td><td>${c.daysIdle}d</td><td>${c.stars}</td><td>${Necrometer.FATE_LABEL[c.fate]}</td></tr>`).join('');
+    $('graveyard').innerHTML = `<h2>the graveyard</h2><table><tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th></tr>${rows}</table>`;
+  } else {
+    $('graveyard').innerHTML = '<p class="dim">no corpses. suspicious.</p>';
+  }
+  $('result').style.display = 'block';
+}
+
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+$('f').addEventListener('submit', (e) => { e.preventDefault(); run($('subject').value); });
+$('dl').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
+  a.download = 'necrometer.svg';
+  a.click();
+});
+const copier = (el) => () => navigator.clipboard.writeText(el.textContent).then(() => status('copied'));
+$('copy').addEventListener('click', copier($('snippet')));
+$('copywf').addEventListener('click', copier($('workflow')));
+
+const u = new URLSearchParams(location.search).get('u');
+if (u) { $('subject').value = u; run(u); }
+</script>
+</body>
+</html>
