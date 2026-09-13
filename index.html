@@ -96,7 +96,8 @@ td { padding:6px 8px; border-bottom:1px solid #1e1830 }
 details { margin-top:26px; border:1px solid var(--border); border-radius:6px; padding:12px 16px; background:var(--panel) }
 summary { cursor:pointer; color:var(--bone) }
 .row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 }
-#status { color:var(--phos); font-size:17px; min-height:24px }
+#status { color:var(--phos); font-size:17px }
+#status:not(:empty) { min-height:24px }
 #status.err { color:var(--blood) }
 #status:not(:empty)::after { content:' ▌'; animation:blink 1s steps(1) infinite }
 @keyframes blink { 50%{opacity:0} }
