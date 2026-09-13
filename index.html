@@ -4,80 +4,146 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>necrometer — how dead are your repos?</title>
+<meta name="theme-color" content="#0a0812">
 <meta property="og:title" content="the necrometer">
-<meta property="og:description" content="measures how dead your github repos are — generates a card for your README">
+<meta property="og:description" content="an instrument for measuring how dead your github repos are">
 <meta property="og:url" content="https://necrometer.dev">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💀</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=IM+Fell+English:ital@0;1&family=VT323&display=swap" rel="stylesheet">
 <style>
-:root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --dim:#8b949e; --accent:#a371f7; --red:#f85149; --amber:#d29922; --blue:#58a6ff }
+:root {
+  --bg:#0a0812; --panel:#14101f; --inset:#0c0a16; --border:#322a4d;
+  --bone:#e8e4d8; --dim:#8a80a8;
+  --phos:#7dffa8; --violet:#b78cff; --blood:#ff5470; --candle:#e8b34b; --blue:#6fa8ff;
+}
 * { box-sizing:border-box }
-body { background:var(--bg); color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; margin:0 }
-main { max-width:680px; margin:48px auto; padding:0 16px }
-h1 { letter-spacing:3px; font-size:26px; margin-bottom:4px }
-h1 .dial { color:var(--accent) }
-h2 { font-size:15px; color:var(--dim); letter-spacing:1px; text-transform:uppercase; margin-top:36px }
-a { color:var(--accent) }
-.tag { color:var(--dim); margin-top:0 }
-form { display:flex; gap:8px; margin:24px 0 }
-input { background:var(--panel); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:6px; flex:1; font-size:14px; min-width:0 }
-button { background:var(--accent); color:var(--bg); border:0; padding:10px 16px; border-radius:6px; font-weight:600; cursor:pointer; white-space:nowrap }
-button.ghost { background:var(--panel); color:var(--text); border:1px solid var(--border) }
-pre { background:var(--panel); border:1px solid var(--border); padding:12px; border-radius:6px; overflow-x:auto; font-size:12px; white-space:pre-wrap; word-break:break-all }
-code { background:var(--panel); padding:2px 5px; border-radius:4px; font-size:12px }
-.hint, .dim { color:var(--dim); font-size:13px }
+html { cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Ctext y='21' font-size='21'%3E💀%3C/text%3E%3C/svg%3E") 13 13, auto }
+body { background:var(--bg); color:var(--bone); font-family:'VT323',ui-monospace,monospace; font-size:19px; line-height:1.45; margin:0 }
+/* CRT atmosphere: scanlines + vignette + occasional flicker */
+body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:5;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 1px, transparent 1px 3px) }
+body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:4;
+  background:radial-gradient(ellipse at 50% 30%, transparent 55%, rgba(0,0,0,.6)); animation:flick 7s infinite }
+@keyframes flick { 0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:.85} 94%{opacity:1} 97%{opacity:.93} 98%{opacity:1} }
+input, textarea { cursor:text }
+a { color:var(--violet) } a:hover { color:var(--phos) }
+main { max-width:700px; margin:40px auto; padding:0 16px }
+
+h1 { font-family:'Creepster',cursive; font-weight:400; font-size:54px; margin:0; letter-spacing:3px;
+  text-shadow:0 0 22px rgba(183,140,255,.45) }
+h1 .sk { display:inline-block; animation:sway 5s ease-in-out infinite }
+@keyframes sway { 0%,100%{transform:rotate(-9deg)} 50%{transform:rotate(9deg)} }
+h1 .zap { color:var(--violet); animation:zap 4s infinite }
+@keyframes zap { 0%,100%{opacity:1} 88%{opacity:1} 89%{opacity:.15} 90%{opacity:1} 93%{opacity:.35} 94%{opacity:1} }
+h2 { font-family:'IM Fell English',serif; font-weight:400; font-size:24px; color:var(--candle);
+  letter-spacing:1px; margin:38px 0 6px }
+.tag { color:var(--dim); margin:2px 0 0 }
+.lbl { display:block; color:var(--dim); font-size:15px; letter-spacing:3px; margin-top:26px; text-transform:uppercase }
+
+form { display:flex; gap:10px; margin:6px 0 10px }
+input { background:var(--inset); border:1px solid var(--border); color:var(--phos); padding:10px 14px;
+  border-radius:4px; flex:1; font-family:inherit; font-size:20px; min-width:0;
+  box-shadow:inset 0 0 14px rgba(0,0,0,.65) }
+input::placeholder { color:#4d4570 }
+input:focus { outline:none; border-color:var(--violet);
+  box-shadow:inset 0 0 14px rgba(0,0,0,.65), 0 0 12px rgba(183,140,255,.25) }
+button { font-family:inherit; font-size:20px; background:var(--phos); color:#06130b; border:0;
+  padding:10px 22px; border-radius:4px; cursor:pointer; box-shadow:0 0 16px rgba(125,255,168,.28) }
+button:hover { box-shadow:0 0 24px rgba(125,255,168,.55) }
+button.ghost { background:transparent; color:var(--violet); border:1px solid var(--violet); box-shadow:none }
+button.ghost:hover { background:rgba(183,140,255,.12) }
+
+pre { background:var(--inset); border:1px solid var(--border); padding:12px; border-radius:4px;
+  overflow-x:auto; font-size:16px; white-space:pre-wrap; word-break:break-all; color:var(--phos);
+  box-shadow:inset 0 0 14px rgba(0,0,0,.5) }
+code { background:var(--inset); padding:2px 6px; border-radius:3px; font-size:16px; color:var(--phos) }
+.hint, .dim { color:var(--dim); font-size:16px }
+
 #result { display:none }
-#result img { display:block; margin:12px 0; max-width:100%; border-radius:6px }
-table { width:100%; border-collapse:collapse; font-size:14px; margin-top:8px }
-th { text-align:left; color:var(--dim); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border) }
-td { padding:6px 8px; border-bottom:1px solid #21262d }
-.fate-dead td:last-child, .fate-buried td:last-child { color:var(--red) }
-.fate-cold td:last-child { color:var(--amber) }
-.fate-cooling td:last-child { color:var(--blue) }
-.stillborn { color:var(--dim); font-size:11px; font-style:italic }
+.plate { display:inline-block; background:linear-gradient(#3d3320,#241d10); border:1px solid #554524;
+  color:var(--candle); font-size:14px; letter-spacing:4px; padding:2px 16px; border-radius:3px;
+  position:relative; z-index:2; margin:18px 0 -9px 14px }
+.bezel { border:8px solid #1c1626; border-radius:10px; padding:10px; background:var(--inset);
+  box-shadow:0 0 0 1px var(--border), 0 0 34px rgba(183,140,255,.12), inset 0 0 26px rgba(0,0,0,.7) }
+.bezel img { display:block; width:100%; border-radius:4px }
+
+table { width:100%; border-collapse:collapse; font-size:17px; margin-top:8px }
+th { text-align:left; color:var(--candle); font-weight:400; padding:6px 8px;
+  border-bottom:1px solid var(--border); font-family:'IM Fell English',serif; letter-spacing:1px }
+td { padding:6px 8px; border-bottom:1px solid #1e1830 }
+.fate-dead td:first-child::before { content:'☠ '; color:var(--blood) }
+.fate-buried td:first-child::before { content:'⚰ '; color:var(--dim) }
+.fate-cold td:first-child::before { content:'❄ '; color:var(--blue) }
+.fate-dead td:nth-child(4), .fate-buried td:nth-child(4) { color:var(--blood) }
+.fate-cold td:nth-child(4) { color:var(--candle) }
+.fate-cooling td:nth-child(4) { color:var(--blue) }
+.stillborn { color:var(--dim); font-size:14px; font-style:italic }
+.epitaph { font-family:'IM Fell English',serif; font-style:italic; color:var(--dim) }
+
 .steps { counter-reset:step; padding-left:0; list-style:none }
-.steps li { margin:14px 0; padding-left:28px; position:relative }
-.steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:1px; width:18px; height:18px; background:var(--panel); border:1px solid var(--border); border-radius:50%; font-size:11px; display:flex; align-items:center; justify-content:center; color:var(--dim) }
-details { margin-top:28px; border:1px solid var(--border); border-radius:6px; padding:12px 16px }
-summary { cursor:pointer; color:var(--text); font-weight:600 }
+.steps li { margin:16px 0; padding-left:32px; position:relative }
+.steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:3px;
+  width:20px; height:20px; background:var(--inset); border:1px solid var(--violet); border-radius:50%;
+  font-size:14px; display:flex; align-items:center; justify-content:center; color:var(--violet) }
+details { margin-top:26px; border:1px solid var(--border); border-radius:6px; padding:12px 16px; background:var(--panel) }
+summary { cursor:pointer; color:var(--bone) }
 .row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 }
-#status { color:var(--dim); font-size:13px; min-height:18px }
-#status.err { color:var(--red) }
-footer { margin:56px 0 24px; color:var(--dim); font-size:12px; border-top:1px solid var(--border); padding-top:16px }
+#status { color:var(--phos); font-size:17px; min-height:24px }
+#status.err { color:var(--blood) }
+#status:not(:empty)::after { content:' ▌'; animation:blink 1s steps(1) infinite }
+@keyframes blink { 50%{opacity:0} }
+footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px solid var(--border); padding-top:16px }
+
+/* spirit wisps */
+.wisp { position:fixed; bottom:-10px; border-radius:50%; background:var(--violet); opacity:0;
+  filter:blur(1.5px); animation:rise 11s linear infinite; z-index:3; pointer-events:none }
+.wisp:nth-child(1) { left:8%;  width:5px; height:5px; animation-delay:0s }
+.wisp:nth-child(2) { left:22%; width:4px; height:4px; animation-delay:3s;  animation-duration:13s }
+.wisp:nth-child(3) { left:41%; width:6px; height:6px; animation-delay:6s;  animation-duration:10s }
+.wisp:nth-child(4) { left:58%; width:4px; height:4px; animation-delay:1.5s; animation-duration:14s }
+.wisp:nth-child(5) { left:74%; width:5px; height:5px; animation-delay:8s;  animation-duration:12s }
+.wisp:nth-child(6) { left:90%; width:4px; height:4px; animation-delay:4.5s; animation-duration:9s }
+@keyframes rise { 0%{transform:translateY(0);opacity:0} 12%{opacity:.45} 85%{opacity:.25}
+  100%{transform:translateY(-105vh) translateX(36px);opacity:0} }
 </style>
 </head>
 <body>
 <main>
-  <h1><span class="dial">&#9760;</span> THE NECROMETER</h1>
-  <p class="tag">Measures how dead your GitHub repos are. Generates a card for your README — nothing to install, nothing hosted.</p>
+  <h1><span class="sk">💀</span> NECR<span class="zap">O</span>METER</h1>
+  <p class="tag">an instrument for measuring how dead your code is.</p>
 
+  <label class="lbl" for="subject">subject for examination</label>
   <form id="f">
-    <input id="subject" placeholder="github username or org" autofocus autocomplete="off">
+    <input id="subject" placeholder="whose soul shall we weigh?" autofocus autocomplete="off">
     <button type="submit">exhume</button>
   </form>
-  <details style="margin:-12px 0 12px">
-    <summary style="font-weight:400;color:var(--dim);font-size:13px">private repos? use a token</summary>
-    <p class="dim">Fine-grained PAT with repo read. Sent from your browser straight to api.github.com — never stored, never proxied.</p>
+  <details style="margin:0 0 12px">
+    <summary class="dim">private graves? bring a token</summary>
+    <p class="dim">fine-grained PAT with repo read. sent from your browser straight to api.github.com — never stored, never proxied.</p>
     <input id="token" type="password" placeholder="github_pat_…" autocomplete="off" style="width:100%">
   </details>
   <div id="status"></div>
 
   <section id="result">
-    <img id="card" alt="necrometer card">
-    <img id="tcard" alt="lifelines chart">
+    <div class="plate">☩ necrometer mk I ☩</div>
+    <div class="bezel"><img id="card" alt="necrometer card"></div>
     <p class="dim" id="summary"></p>
 
-    <h2>put it in your README — it stays alive</h2>
+    <h2>the ritual — bind it to your README</h2>
     <ol class="steps">
-      <li>paste this into <code>.github/workflows/necrometer.yml</code> — it generates both cards and re-renders them daily (run it once from the Actions tab to see it now):
+      <li>inscribe the ward: paste this into <code>.github/workflows/necrometer.yml</code> — it carves the card and re-carves it daily (run once from the Actions tab to see it now):
         <div class="row"><pre id="workflow" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copywf">copy</button></div>
       </li>
-      <li>paste this into your README.md (either card, or both):
+      <li>speak its name: paste this into your README.md:
         <div class="row"><pre id="snippet" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copy">copy</button></div>
       </li>
     </ol>
 
     <details>
-      <summary>just want a snapshot instead?</summary>
-      <p class="dim"><button id="dl">download necrometer.svg</button> <button class="ghost" id="dlt">download necrometer-timeline.svg</button> — commit next to your README. Frozen in time; no workflow needed.</p>
+      <summary>a lesser rite — snapshot only</summary>
+      <p class="dim"><button class="ghost" id="dl">download necrometer.svg</button> — commit next to your README. frozen in time; it will never change. like the dead.</p>
     </details>
 
     <div id="graveyard"></div>
@@ -85,15 +151,19 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:12px; border-top:1px so
 
   <section id="hall">
     <h2>hall of corpses</h2>
-    <p class="dim">famous accounts, ranked by necrosis. updated weekly.</p>
+    <p class="dim">famous accounts, ranked by necrosis. exhumed weekly.</p>
     <div id="hallrows"><p class="dim">loading…</p></div>
   </section>
 
   <footer>
-    necrometer.dev — client-side only; your API calls go straight to GitHub.
+    necrometer.dev — conjured client-side; your api calls go straight to github.
+    no servers were harmed. they were already dead.<br>
     source: <a href="https://github.com/necrometer-dev/necrometer-dev.github.io">necrometer-dev</a>
   </footer>
 </main>
+
+<div class="wisp"></div><div class="wisp"></div><div class="wisp"></div>
+<div class="wisp"></div><div class="wisp"></div><div class="wisp"></div>
 
 <script src="necrometer.js"></script>
 <script>
@@ -118,61 +188,71 @@ jobs:
       - run: |
           curl -sSL https://necrometer.dev/necrometer.js -o /tmp/n.js
           node /tmp/n.js "$GITHUB_REPOSITORY_OWNER" necrometer.svg
-          node /tmp/n.js "$GITHUB_REPOSITORY_OWNER" necrometer-timeline.svg --timeline
       - run: |
           git config user.name "necrometer[bot]"
           git config user.email "bot@necrometer.dev"
-          git add necrometer.svg necrometer-timeline.svg
+          git add necrometer.svg
           git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
           git push`;
+
+const RITES = ['rattling the coffins', 'reading the entrails', 'knocking on repo lids',
+  'consulting the void', 'counting the maggots', 'checking for a pulse',
+  'lighting the black candles', 'whispering to the dead', 'sharpening the scalpel'];
+let riteTimer = null, dug = 0;
+function startRites() {
+  dug = 0; let i = 0;
+  const tick = () => status(`${RITES[i++ % RITES.length]}…${dug ? ` — ${dug} bodies found` : ''}`);
+  tick();
+  riteTimer = setInterval(tick, 1100);
+}
+function stopRites() { clearInterval(riteTimer); riteTimer = null; }
 
 async function run(name) {
   name = name.trim().replace(/^@/, '');
   if (!name) return;
-  status('digging up ' + name + '…');
   $('result').style.display = 'none';
+  startRites();
   try {
     const token = $('token').value.trim() || null;
-    const repos = await Necrometer.fetchRepos(name, (n, left) =>
-      status(`digging… ${n} repos on this page${left != null ? ` · ${left} API calls left` : ''}`), token);
+    const repos = await Necrometer.fetchRepos(name, (n) => { dug += n; }, token);
     const r = Necrometer.analyze(name, repos);
-    current = { r, svg: Necrometer.renderCard(r), tsvg: Necrometer.renderTimeline(r) };
+    current = { r, svg: Necrometer.renderCard(r) };
     show(r);
     status('');
     history.replaceState(null, '', '?u=' + encodeURIComponent(name));
   } catch (e) {
     status(e.message || String(e), true);
+  } finally {
+    stopRites();
   }
 }
 
 function show(r) {
   const blob = new Blob([current.svg], { type: 'image/svg+xml' });
   $('card').src = URL.createObjectURL(blob);
-  $('tcard').src = URL.createObjectURL(new Blob([current.tsvg], { type: 'image/svg+xml' }));
   $('summary').textContent = r.total === 0
     ? 'no repos — nothing to bury'
-    : `${r.index}% necrotic — ${r.title} · ${r.total} repos · ${r.starsStranded} stars stranded`;
+    : `${r.index}% necrotic — ${r.title} · ${r.total} souls · ${r.starsStranded} stars stranded`;
   $('snippet').textContent =
-    `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})\n` +
-    `[![lifelines](necrometer-timeline.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
+    `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = WORKFLOW(r.subject);
 
   if (r.corpses.length) {
-    $('graveyard').innerHTML = `<h2>the graveyard</h2><table><tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}</table>`;
+    $('graveyard').innerHTML = `<h2>the graveyard</h2><p class="dim">the dearly departed, by time since last pulse.</p><table><tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}</table>`;
     epitaphs(r, $('token').value.trim() || null).then(() => {
       if (current && current.r === r)
         $('graveyard').querySelector('table').innerHTML =
           `<tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}`;
     });
   } else {
-    $('graveyard').innerHTML = '<p class="dim">no corpses. suspicious.</p>';
+    $('graveyard').innerHTML = '<h2>the graveyard</h2><p class="dim">no corpses found. suspicious.</p>';
   }
   $('result').style.display = 'block';
 }
 
 function corpseRows(r) {
   return r.corpses.map(c =>
-    `<tr class="fate-${Necrometer.FATE_LABEL[c.fate]}"><td><a href="${c.url}">${esc(c.name)}</a>${c.stillborn ? ' <span class="stillborn">stillborn</span>' : ''}</td><td>${c.daysIdle}d</td><td>${c.stars}</td><td>${Necrometer.FATE_LABEL[c.fate]}</td><td class="dim">${c.epitaph ? '"' + esc(c.epitaph) + '"' : '…'}</td></tr>`).join('');
+    `<tr class="fate-${Necrometer.FATE_LABEL[c.fate]}"><td><a href="${c.url}">${esc(c.name)}</a>${c.stillborn ? ' <span class="stillborn">stillborn</span>' : ''}</td><td>${c.daysIdle}d</td><td>${c.stars}</td><td>${Necrometer.FATE_LABEL[c.fate]}</td><td class="epitaph">${c.epitaph ? '"' + esc(c.epitaph) + '"' : '…'}</td></tr>`).join('');
 }
 
 // Last words: the repo's final commit message. Top corpses only — one API call each.
@@ -194,15 +274,13 @@ async function epitaphs(r, token) {
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 $('f').addEventListener('submit', (e) => { e.preventDefault(); run($('subject').value); });
-const download = (svg, name) => () => {
+$('dl').addEventListener('click', () => {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-  a.download = name;
+  a.href = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
+  a.download = 'necrometer.svg';
   a.click();
-};
-$('dl').addEventListener('click', () => download(current.svg, 'necrometer.svg')());
-$('dlt').addEventListener('click', () => download(current.tsvg, 'necrometer-timeline.svg')());
-const copier = (el) => () => navigator.clipboard.writeText(el.textContent).then(() => status('copied'));
+});
+const copier = (el) => () => navigator.clipboard.writeText(el.textContent).then(() => status('copied — go carve it'));
 $('copy').addEventListener('click', copier($('snippet')));
 $('copywf').addEventListener('click', copier($('workflow')));
 
