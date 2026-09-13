@@ -158,12 +158,6 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
 
   </section>
 
-  <section id="hall">
-    <h2>hall of corpses</h2>
-    <p class="dim">famous accounts, ranked by necrosis. exhumed weekly.</p>
-    <div id="hallrows"><p class="dim">loading…</p></div>
-  </section>
-
   <footer>
     necrometer.dev — conjured client-side; your api calls go straight to github.
     no servers were harmed. they were already dead.<br>
@@ -265,8 +259,7 @@ $('copywf').addEventListener('click', copier($('workflow')));
 const u = new URLSearchParams(location.search).get('u');
 if (u) { $('subject').value = u; run(u); }
 
-// hall of corpses — static JSON regenerated weekly by an Action in this repo.
-// Feeds two displays: the header corpse ticker and the full registry table.
+// corpse ticker — static hall.json regenerated weekly by an Action in this repo.
 fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) => {
   const cls = (h) => h.index >= 80 ? 'doomed' : h.index < 15 ? 'hale' : '';
   const tape = hall.map((h) =>
@@ -275,12 +268,7 @@ fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) =
   $('tape1').innerHTML = tape;
   $('tape2').innerHTML = tape;
   $('ticker').style.display = 'block';
-  $('hallrows').innerHTML = '<table><tr><th></th><th>account</th><th>necrosis</th><th>title</th><th>corpses</th></tr>'
-    + hall.map((h, i) =>
-      `<tr><td class="dim">${i + 1}</td><td><a href="?u=${encodeURIComponent(h.name)}">${esc(h.name)}</a></td>`
-      + `<td>${h.index}%</td><td class="dim">${esc(h.title)}</td><td>${h.corpses}</td></tr>`).join('')
-    + '</table>';
-}).catch(() => { $('hallrows').innerHTML = '<p class="dim">the hall is empty. for now.</p>'; });
+}).catch(() => { /* the tape stays hidden */ });
 </script>
 </body>
 </html>
