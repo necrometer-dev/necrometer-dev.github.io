@@ -1,0 +1,22 @@
+name: hall of corpses
+
+on:
+  schedule: [{cron: "23 4 * * 1"}]   # weekly, Mondays
+  workflow_dispatch:
+
+permissions: { contents: write }
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/hall.js
+      - run: |
+          git config user.name "necrometer[bot]"
+          git config user.email "bot@necrometer.dev"
+          git add hall.json
+          git diff --cached --quiet || git commit -m "hall of corpses: $(date +%F)"
+          git push

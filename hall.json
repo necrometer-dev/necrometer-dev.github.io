@@ -1,0 +1,194 @@
+[
+ {
+  "name": "twitter-archive",
+  "index": 100,
+  "title": "Repo Necromancer",
+  "corpses": 82,
+  "total": 82,
+  "starsStranded": 45710
+ },
+ {
+  "name": "defunkt",
+  "index": 99,
+  "title": "Repo Necromancer",
+  "corpses": 78,
+  "total": 78,
+  "starsStranded": 37006
+ },
+ {
+  "name": "tj",
+  "index": 97,
+  "title": "Repo Necromancer",
+  "corpses": 215,
+  "total": 219,
+  "starsStranded": 72603
+ },
+ {
+  "name": "mitchellh",
+  "index": 93,
+  "title": "Repo Necromancer",
+  "corpses": 102,
+  "total": 106,
+  "starsStranded": 37507
+ },
+ {
+  "name": "kripken",
+  "index": 93,
+  "title": "Repo Necromancer",
+  "corpses": 43,
+  "total": 45,
+  "starsStranded": 5892
+ },
+ {
+  "name": "gaearon",
+  "index": 91,
+  "title": "Repo Necromancer",
+  "corpses": 60,
+  "total": 61,
+  "starsStranded": 45466
+ },
+ {
+  "name": "ssloy",
+  "index": 91,
+  "title": "Repo Necromancer",
+  "corpses": 42,
+  "total": 42,
+  "starsStranded": 35769
+ },
+ {
+  "name": "jashkenas",
+  "index": 90,
+  "title": "Repo Necromancer",
+  "corpses": 16,
+  "total": 16,
+  "starsStranded": 78545
+ },
+ {
+  "name": "ruanyf",
+  "index": 87,
+  "title": "Repo Necromancer",
+  "corpses": 60,
+  "total": 63,
+  "starsStranded": 113977
+ },
+ {
+  "name": "google",
+  "index": 85,
+  "title": "Repo Necromancer",
+  "corpses": 884,
+  "total": 984,
+  "starsStranded": 714172
+ },
+ {
+  "name": "antirez",
+  "index": 85,
+  "title": "Repo Necromancer",
+  "corpses": 100,
+  "total": 102,
+  "starsStranded": 64204
+ },
+ {
+  "name": "sindresorhus",
+  "index": 81,
+  "title": "Repo Necromancer",
+  "corpses": 955,
+  "total": 992,
+  "starsStranded": 378151
+ },
+ {
+  "name": "microsoft",
+  "index": 79,
+  "title": "Graveyard Keeper",
+  "corpses": 786,
+  "total": 952,
+  "starsStranded": 293762
+ },
+ {
+  "name": "angular",
+  "index": 75,
+  "title": "Graveyard Keeper",
+  "corpses": 158,
+  "total": 209,
+  "starsStranded": 144420
+ },
+ {
+  "name": "fabpot",
+  "index": 72,
+  "title": "Graveyard Keeper",
+  "corpses": 10,
+  "total": 12,
+  "starsStranded": 1420
+ },
+ {
+  "name": "torvalds",
+  "index": 52,
+  "title": "Serial Starter",
+  "corpses": 7,
+  "total": 9,
+  "starsStranded": 9579
+ },
+ {
+  "name": "easyLDAP",
+  "index": 33,
+  "title": "Healthy Churn",
+  "corpses": 3,
+  "total": 3,
+  "starsStranded": 0
+ },
+ {
+  "name": "spring-projects",
+  "index": 32,
+  "title": "Healthy Churn",
+  "corpses": 35,
+  "total": 76,
+  "starsStranded": 18699
+ },
+ {
+  "name": "ImpSync",
+  "index": 30,
+  "title": "Healthy Churn",
+  "corpses": 10,
+  "total": 11,
+  "starsStranded": 0
+ },
+ {
+  "name": "facebook",
+  "index": 28,
+  "title": "Healthy Churn",
+  "corpses": 69,
+  "total": 157,
+  "starsStranded": 119385
+ },
+ {
+  "name": "studio2201",
+  "index": 25,
+  "title": "Healthy Churn",
+  "corpses": 3,
+  "total": 4,
+  "starsStranded": 0
+ },
+ {
+  "name": "UberMetroid",
+  "index": 13,
+  "title": "The Maintainer",
+  "corpses": 2,
+  "total": 5,
+  "starsStranded": 0
+ },
+ {
+  "name": "idlescreen",
+  "index": 0,
+  "title": "The Maintainer",
+  "corpses": 0,
+  "total": 10,
+  "starsStranded": 0
+ },
+ {
+  "name": "openOODA",
+  "index": 0,
+  "title": "The Maintainer",
+  "corpses": 0,
+  "total": 15,
+  "starsStranded": 0
+ }
+]

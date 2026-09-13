@@ -106,31 +106,35 @@
     const owned = repos.filter((r) => !r.fork);
     const total = owned.length;
     const counts = [0, 0, 0, 0, 0];
-    const corpses = [];
+    const entries = [];
     let weightSum = 0, starsStranded = 0, stillborn = 0, lastPush = 0;
 
     for (const repo of owned) {
       const fate = fateOf(repo, now);
       counts[fate]++;
       weightSum += FATE_WEIGHT[fate];
-      const lastActivity = repo.pushed_at ? Date.parse(repo.pushed_at) : Date.parse(repo.created_at);
+      const createdAt = Date.parse(repo.created_at);
+      const lastActivity = repo.pushed_at ? Date.parse(repo.pushed_at) : createdAt;
       if (lastActivity > lastPush) lastPush = lastActivity;
 
+      const daysIdle = Math.max(0, Math.floor((now - lastActivity) / 86400e3));
+      const bornDead = !repo.pushed_at || (lastActivity - createdAt) <= 24 * 3600e3;
+      entries.push({
+        name: repo.name,
+        url: repo.html_url,
+        createdAt,
+        lastActivity,
+        daysIdle,
+        stars: repo.stargazers_count || 0,
+        fate,
+        stillborn: bornDead,
+      });
       if (fate !== F_ALIVE) {
         starsStranded += repo.stargazers_count || 0;
-        const daysIdle = Math.max(0, Math.floor((now - lastActivity) / 86400e3));
-        const bornDead = !repo.pushed_at || (lastActivity - Date.parse(repo.created_at)) <= 24 * 3600e3;
         if (bornDead) stillborn++;
-        corpses.push({
-          name: repo.name,
-          url: repo.html_url,
-          daysIdle,
-          stars: repo.stargazers_count || 0,
-          fate,
-          stillborn: bornDead,
-        });
       }
     }
+    const corpses = entries.filter((e) => e.fate !== F_ALIVE);
 
     corpses.sort((a, b) => b.daysIdle - a.daysIdle);
     const index = total === 0 ? 0 : Math.round((weightSum / total) * 100);
@@ -148,6 +152,7 @@
       daysSinceAnyPush: lastPush ? Math.floor((now - lastPush) / 86400e3) : null,
       lowSample: total < 3,
       corpses,
+      entries,
     };
   }
 
@@ -288,6 +293,72 @@
       + `</path>`;
   }
 
+  // ---------- lifelines chart ----------
+  // Star-history, but for death: one line per repo, created_at -> last push.
+  // Alive lines run off the right edge with a pulse; dead ones end in a grave tick.
+
+  const FATE_COLOR = ['#3fb950', '#58a6ff', '#d29922', '#f85149', '#6e7681'];
+  const TL_W = 495, TL_ROWS = 14, ROW_H = 15;
+  const TL_X0 = 112, TL_X1 = 470, TL_TOP = 46;
+
+  function renderTimeline(reading) {
+    const rows = reading.entries
+      .slice()
+      .sort((a, b) => b.lastActivity - a.lastActivity)
+      .slice(0, TL_ROWS);
+    const height = TL_TOP + rows.length * ROW_H + 20;
+    const t1 = Date.now();
+    const t0 = Math.min(...rows.map((r) => r.createdAt), t1 - 1);
+    const span = Math.max(1, t1 - t0);
+    const x = (t) => TL_X0 + ((t - t0) / span) * (TL_X1 - TL_X0);
+    const p = palette(reading.index);
+
+    let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${TL_W}" height="${height}" viewBox="0 0 ${TL_W} ${height}" font-family="${FONT}">`
+      + `<rect width="${TL_W}" height="${height}" rx="6" fill="${p.bg}" stroke="${p.border}" stroke-width="1"/>`
+      + `<text x="12" y="26" font-size="13" font-weight="600" fill="${p.text}">@${esc(reading.subject)} — lifelines</text>`
+      + `<text x="${TL_W - 12}" y="26" text-anchor="end" font-size="13" font-weight="700" fill="${p.accent}">${reading.index}% necrotic</text>`;
+
+    // time gridlines: 4 verticals + range labels
+    for (let i = 0; i <= 4; i++) {
+      const gx = TL_X0 + (i / 4) * (TL_X1 - TL_X0);
+      s += `<line x1="${f1(gx)}" y1="${TL_TOP - 6}" x2="${f1(gx)}" y2="${TL_TOP + rows.length * ROW_H}" stroke="${p.border}" stroke-width="0.5" opacity="0.6"/>`;
+    }
+    s += `<text x="${TL_X0}" y="${TL_TOP - 10}" font-size="9" fill="${p.dim}">${new Date(t0).getFullYear()}</text>`
+      + `<text x="${TL_X1}" y="${TL_TOP - 10}" text-anchor="end" font-size="9" fill="${p.dim}">now</text>`;
+
+    rows.forEach((r, i) => {
+      const y = TL_TOP + i * ROW_H + ROW_H / 2 + 2;
+      const x0 = x(r.createdAt), x1 = x(r.lastActivity);
+      const color = FATE_COLOR[r.fate];
+      const delay = (i * 0.07).toFixed(2);
+      const name = r.name.length > 15 ? r.name.slice(0, 14) + '…' : r.name;
+      s += `<text x="8" y="${y + 3}" font-size="9" fill="${p.dim}">${esc(name)}</text>`;
+      if (r.stillborn) {
+        // diamond at birth — it never lived
+        s += `<polygon points="${f1(x0)},${f1(y - 4)} ${f1(x0 + 4)},${f1(y)} ${f1(x0)},${f1(y + 4)} ${f1(x0 - 4)},${f1(y)}" fill="${color}" opacity="0.9"/>`;
+        return;
+      }
+      s += `<line x1="${f1(x0)}" y1="${f1(y)}" x2="${f1(x1)}" y2="${f1(y)}" stroke="${color}" stroke-width="2.2" stroke-linecap="round" `
+        + `stroke-dasharray="400" stroke-dashoffset="0" opacity="0.9">`
+        + `<animate attributeName="stroke-dashoffset" from="400" to="0" dur="0.7s" begin="${delay}s" fill="freeze"/>`
+        + `</line>`;
+      if (r.fate === 0) {
+        // alive: pulsing dot at the right edge
+        s += `<circle cx="${f1(x1)}" cy="${f1(y)}" r="3.2" fill="${color}">`
+          + `<animate attributeName="opacity" values="1;0.25;1" dur="1.4s" begin="${delay}s" repeatCount="indefinite"/>`
+          + `</circle>`;
+      } else {
+        // grave tick at the moment it died
+        s += `<line x1="${f1(x1)}" y1="${f1(y - 4.5)}" x2="${f1(x1)}" y2="${f1(y + 4.5)}" stroke="${color}" stroke-width="1.6">`
+          + `<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="${delay}s" fill="freeze"/>`
+          + `</line>`;
+      }
+    });
+
+    s += `<text x="${TL_W - 10}" y="${height - 8}" text-anchor="end" font-size="10" fill="${p.dim}">necrometer.dev</text></svg>`;
+    return s;
+  }
+
   function easterEgg(index) {
     if (index === 0) {
       let e = `<circle cx="30" cy="30" r="7" fill="#ffd866"/>`;
@@ -318,22 +389,25 @@
       + '</svg>';
   }
 
-  return { fetchRepos, analyze, renderCard, NotFound, Upstream, FATE_LABEL };
+  return { fetchRepos, analyze, renderCard, renderTimeline, NotFound, Upstream, FATE_LABEL };
 });
 
 // ---------- node CLI ----------
 // node necrometer.js <user-or-org> [out.svg]   (node >= 18)
 if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
-  const { fetchRepos, analyze, renderCard } = module.exports;
-  const [name, out] = [process.argv[2], process.argv[3] || 'necrometer.svg'];
+  const { fetchRepos, analyze, renderCard, renderTimeline } = module.exports;
+  const timeline = process.argv.includes('--timeline');
+  const args = process.argv.slice(2).filter((a) => a !== '--timeline');
+  const [name, out] = [args[0], args[1] || 'necrometer.svg'];
   if (!name) {
-    console.error('usage: node necrometer.js <user-or-org> [out.svg]');
+    console.error('usage: node necrometer.js <user-or-org> [out.svg] [--timeline]');
     process.exit(2);
   }
   (async () => {
     const token = process.env.NECRO_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
     const repos = await fetchRepos(name, null, token);
-    const svg = renderCard(analyze(name, repos));
+    const reading = analyze(name, repos);
+    const svg = timeline ? renderTimeline(reading) : renderCard(reading);
     require('fs').writeFileSync(out, svg);
     console.log(`wrote ${out}`);
   })().catch((e) => {
