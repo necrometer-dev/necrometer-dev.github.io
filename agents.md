@@ -52,7 +52,7 @@ gh workflow run necrometer
   commits it. If the user wants it sooner, trigger the workflow.
 - Do **not** modify or replace the action's steps —
   `necrometer-dev/necrometer-action` summons a release binary pinned to
-  `v0.2.0` and runs `sha256sum -c` before executing it. Tampering with that is
+  `v0.2.1` and runs `sha256sum -c` before executing it. Tampering with that is
   a supply-chain downgrade; if checksum verification fails in a run, stop and
   report it.
 - If the run fails with a 403/404 on the GitHub API, the repo belongs to an

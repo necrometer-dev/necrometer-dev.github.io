@@ -341,28 +341,28 @@
     const face = index < 15 ? 'happy' : index < 60 ? 'ok' : index < 80 ? 'sad' : 'dead';
     let s = '';
     if (face === 'happy')
-      s += `<ellipse cx="${sx}" cy="${sy - 16}" rx="6" ry="2" fill="none" stroke="#ffd866" stroke-width="1.4"/>`;
-    s += `<path d="M ${sx - 10.5},${sy + 3} A 10.5 10.5 0 1 1 ${sx + 10.5},${sy + 3} `
-      + `L ${sx + 10.5},${sy + 6} Q ${sx + 10.5},${sy + 10.5} ${sx + 6.5},${sy + 10.5} `
-      + `L ${sx - 6.5},${sy + 10.5} Q ${sx - 10.5},${sy + 10.5} ${sx - 10.5},${sy + 6} Z" fill="#e8e6df"/>`;
-    s += `<path d="M ${sx - 3.5},${sy + 10.5} v -3 M ${sx},${sy + 10.5} v -3 M ${sx + 3.5},${sy + 10.5} v -3" stroke="${p.bg}" stroke-width="1"/>`;
+      s += `<ellipse cx="${sx}" cy="${f1(sy - 17)}" rx="6" ry="2" fill="none" stroke="${p.candle}" stroke-width="1.5" filter="url(#glow-candle)"/>`;
+    s += `<path d="M ${f1(sx - 10.5)},${f1(sy + 3)} A 10.5 10.5 0 1 1 ${f1(sx + 10.5)},${f1(sy + 3)} `
+      + `L ${f1(sx + 10.5)},${f1(sy + 6)} Q ${f1(sx + 10.5)},${f1(sy + 10.5)} ${f1(sx + 6.5)},${f1(sy + 10.5)} `
+      + `L ${f1(sx - 6.5)},${f1(sy + 10.5)} Q ${f1(sx - 10.5)},${f1(sy + 10.5)} ${f1(sx - 10.5)},${f1(sy + 6)} Z" fill="${p.text}" stroke="#2d2642" stroke-width="0.8"/>`;
+    s += `<path d="M ${f1(sx - 3.5)},${f1(sy + 10.5)} v -3 M ${f1(sx)},${f1(sy + 10.5)} v -3 M ${f1(sx + 3.5)},${f1(sy + 10.5)} v -3" stroke="${p.inset}" stroke-width="1"/>`;
     const eye = (ex) => {
       const ey = sy - 0.5;
       if (face === 'happy')
-        return `<path d="M ${ex - 2.4},${ey + 1} Q ${ex},${ey - 2.2} ${ex + 2.4},${ey + 1}" stroke="${p.bg}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+        return `<path d="M ${f1(ex - 2.4)},${f1(ey + 1)} Q ${f1(ex)},${f1(ey - 2.2)} ${f1(ex + 2.4)},${f1(ey + 1)}" stroke="${p.inset}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
       if (face === 'dead')
-        return `<path d="M ${ex - 2},${ey - 2} l 4,4 M ${ex + 2},${ey - 2} l -4,4" stroke="${p.bg}" stroke-width="1.3" stroke-linecap="round"/>`;
-      return `<circle cx="${ex}" cy="${ey}" r="2.3" fill="${p.bg}"/>`;
+        return `<path d="M ${f1(ex - 2)},${f1(ey - 2)} l 4,4 M ${f1(ex + 2)},${f1(ey - 2)} l -4,4" stroke="${p.inset}" stroke-width="1.3" stroke-linecap="round"/>`;
+      return `<circle cx="${f1(ex)}" cy="${f1(ey)}" r="2.3" fill="${p.inset}"/>`;
     };
     s += eye(sx - 4) + eye(sx + 4);
-    s += `<path d="M ${sx},${sy + 4.5} l -1.4,-2.2 l 2.8,0 Z" fill="${p.bg}"/>`;
+    s += `<path d="M ${f1(sx)},${f1(sy + 4.5)} l -1.4,-2.2 l 2.8,0 Z" fill="${p.inset}"/>`;
     if (face === 'sad')
-      s += `<path d="M ${sx - 2.5},${sy + 8.4} Q ${sx},${sy + 6.8} ${sx + 2.5},${sy + 8.4}" stroke="${p.bg}" stroke-width="1" fill="none"/>`;
+      s += `<path d="M ${f1(sx - 2.5)},${f1(sy + 8.4)} Q ${f1(sx)},${f1(sy + 6.8)} ${f1(sx + 2.5)},${f1(sy + 8.4)}" stroke="${p.inset}" stroke-width="1" fill="none"/>`;
     if (face === 'happy')
-      s += `<ellipse cx="${sx - 6.8}" cy="${sy + 4}" rx="1.8" ry="1.1" fill="#f778ba" opacity="0.7"/>`
-        + `<ellipse cx="${sx + 6.8}" cy="${sy + 4}" rx="1.8" ry="1.1" fill="#f778ba" opacity="0.7"/>`;
+      s += `<ellipse cx="${f1(sx - 6.8)}" cy="${f1(sy + 4)}" rx="1.8" ry="1.1" fill="${p.blood}" opacity="0.8"/>`
+        + `<ellipse cx="${f1(sx + 6.8)}" cy="${f1(sy + 4)}" rx="1.8" ry="1.1" fill="${p.blood}" opacity="0.8"/>`;
     if (face === 'dead')
-      s += `<path d="M ${sx - 4},${sy - 8.5} l 3,3.5 l -1.8,2.5" stroke="#9a978c" stroke-width="0.9" fill="none"/>`;
+      s += `<path d="M ${f1(sx - 4)},${f1(sy - 8.5)} l 3,3.5 l -1.8,2.5" stroke="${p.dim}" stroke-width="0.9" fill="none"/>`;
     return `<g>${s}</g>`;
   }
 
@@ -370,19 +370,20 @@
   // stillborn, the baby graves). All alive? Flowers grow instead.
   function graveyard(reading, p) {
     const gy = 180;
-    let s = `<line x1="24" y1="${gy}" x2="166" y2="${gy}" stroke="${p.border}" stroke-width="1"/>`;
+    let s = `<line x1="24" y1="${f1(gy)}" x2="166" y2="${f1(gy)}" stroke="${p.border}" stroke-width="1"/>`;
     const dead = reading.entries
       .filter((e) => e.fate !== 0)
       .sort((a, b) => (b.stillborn - a.stillborn) || b.daysIdle - a.daysIdle);
     if (!dead.length) {
       for (let i = 0; i < 3; i++) {
         const fx = 42 + i * 30;
-        s += `<line x1="${fx}" y1="${gy}" x2="${fx}" y2="${gy - 7}" stroke="#3fb950" stroke-width="1.2"/>`;
+        s += `<line x1="${f1(fx)}" y1="${f1(gy)}" x2="${f1(fx)}" y2="${f1(gy - 7)}" stroke="${p.phos}" stroke-width="1.2"/>`;
         for (let k = 0; k < 5; k++) {
           const [px, py] = pt(fx, gy - 9.5, 2.4, k * 72 + 90);
-          s += `<circle cx="${f1(px)}" cy="${f1(py)}" r="1.7" fill="${i % 2 ? '#f778ba' : '#ffd866'}"/>`;
+          const color = i % 2 ? p.blood : p.candle;
+          s += `<circle cx="${f1(px)}" cy="${f1(py)}" r="1.7" fill="${color}"/>`;
         }
-        s += `<circle cx="${fx}" cy="${gy - 9.5}" r="1.4" fill="#e6edf3"/>`;
+        s += `<circle cx="${f1(fx)}" cy="${f1(gy - 9.5)}" r="1.4" fill="${p.text}"/>`;
       }
       return `<g>${s}</g>`;
     }
@@ -390,11 +391,11 @@
     show.forEach((e, i) => {
       const w = e.stillborn ? 8 : 12, h = e.stillborn ? 7 : 11;
       const x = 28 + i * 22, top = gy - h;
-      s += `<path d="M ${x},${gy} L ${x},${top + w / 2} A ${w / 2} ${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},${gy} Z" fill="#565c66"/>`;
-      s += `<path d="M ${x + w / 2 - 1.8},${top + w / 2 + 1.2} h 3.6 M ${x + w / 2},${top + w / 2 - 0.6} v 3.6" stroke="${p.bg}" stroke-width="0.9"/>`;
+      s += `<path d="M ${f1(x)},${f1(gy)} L ${f1(x)},${f1(top + w / 2)} A ${w / 2} ${w / 2} 0 0 1 ${f1(x + w)},${f1(top + w / 2)} L ${f1(x + w)},${f1(gy)} Z" fill="#28213b" stroke="#3d3356" stroke-width="0.8"/>`;
+      s += `<path d="M ${f1(x + w / 2 - 1.8)},${f1(top + w / 2 + 1.2)} h 3.6 M ${f1(x + w / 2)},${f1(top + w / 2 - 0.6)} v 3.6" stroke="${p.inset}" stroke-width="0.9"/>`;
     });
     if (dead.length > 6)
-      s += `<text x="${28 + 6 * 22 - 6}" y="${gy - 2}" font-size="8" fill="${p.dim}">+${dead.length - 6}</text>`;
+      s += `<text x="${f1(28 + 6 * 22 - 6)}" y="${f1(gy - 2)}" font-size="9" fill="${p.dim}" class="font-mono">+${dead.length - 6}</text>`;
     return `<g>${s}</g>`;
   }
 
@@ -466,22 +467,22 @@
 
   function easterEgg(index) {
     if (index === 0) {
-      let e = `<circle cx="30" cy="30" r="7" fill="#ffd866"/>`;
+      let e = `<circle cx="30" cy="30" r="7" fill="#e8b34b" filter="url(#glow-candle)"/>`;
       for (let i = 0; i < 8; i++) {
         const a = i * 45;
         const [x0, y0] = pt(30, 30, 10, a);
         const [x1, y1] = pt(30, 30, 15, a);
-        e += `<line x1="${f1(x0)}" y1="${f1(y0)}" x2="${f1(x1)}" y2="${f1(y1)}" stroke="#ffd866" stroke-width="1.5"/>`;
+        e += `<line x1="${f1(x0)}" y1="${f1(y0)}" x2="${f1(x1)}" y2="${f1(y1)}" stroke="#e8b34b" stroke-width="1.5" filter="url(#glow-candle)"/>`;
       }
       return e;
     }
     if (index >= 80) {
-      return '<polyline points="60,75 72,95 66,110 80,128" stroke="#3a3f45" stroke-width="1.5" fill="none"/>'
-        + '<polyline points="120,70 112,92 124,105 115,126" stroke="#3a3f45" stroke-width="1.2" fill="none"/>'
-        + '<path d="M 470,10 Q 480,20 488,12 M 470,10 Q 478,28 470,36 M 470,10 L 488,36 M 470,10 A 24 24 0 0 1 488,36" stroke="#3a3f45" stroke-width="1" fill="none"/>'
-        + '<line x1="479" y1="24" x2="479" y2="40" stroke="#4a5058" stroke-width="0.8"/>'
-        + '<circle cx="479" cy="42" r="2.2" fill="#4a5058"/>'
-        + '<path d="M 477,41 l -2.5,-2 M 477,43 l -2.5,2 M 481,41 l 2.5,-2 M 481,43 l 2.5,2" stroke="#4a5058" stroke-width="0.8" fill="none"/>';
+      return '<polyline points="60,75 72,95 66,110 80,128" stroke="#322a4d" stroke-width="1.5" fill="none"/>'
+        + '<polyline points="120,70 112,92 124,105 115,126" stroke="#322a4d" stroke-width="1.2" fill="none"/>'
+        + '<path d="M 470,10 Q 480,20 488,12 M 470,10 Q 478,28 470,36 M 470,10 L 488,36 M 470,10 A 24 24 0 0 1 488,36" stroke="#322a4d" stroke-width="1" fill="none"/>'
+        + '<line x1="479" y1="24" x2="479" y2="40" stroke="#4d4570" stroke-width="0.8"/>'
+        + '<circle cx="479" cy="42" r="2.2" fill="#4d4570"/>'
+        + '<path d="M 477,41 l -2.5,-2 M 477,43 l -2.5,2 M 481,41 l 2.5,-2 M 481,43 l 2.5,2" stroke="#4d4570" stroke-width="0.8" fill="none"/>';
     }
     return '';
   }
