@@ -169,7 +169,11 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
         </button>
         <button class="btn-action" id="downloadcard" type="button" title="Download card PNG">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>download</span>
+          <span>download PNG</span>
+        </button>
+        <button class="btn-action" id="downloadsvg" type="button" title="Download card SVG">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>download SVG</span>
         </button>
         <a id="share-x" class="btn-x" target="_blank" rel="noopener noreferrer" href="#" title="Post to 𝕏">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -322,8 +326,16 @@ $('agentrite').textContent = AGENT_RITE;
 
 function svgToPngBlob(svgString, scale = 2) {
   return new Promise((resolve, reject) => {
+    // For static rasterization (canvas / PNG), strip SMIL animations so the card renders
+    // in its completed resting state:
+    // 1. Needle points directly to its true calculated position (removes initial -swing rotation)
+    // 2. Heartbeat EKG line is fully visible (removes initial 900 offset)
+    // 3. Pulsing heart icon stays at full opacity
+    const staticSvg = svgString
+      .replace(/<animateTransform[\s\S]*?\/>/gi, '')
+      .replace(/<animate[\s\S]*?\/>/gi, '');
     const img = new Image();
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const svgBlob = new Blob([staticSvg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     img.onload = () => {
       try {
@@ -397,6 +409,13 @@ $('downloadcard').addEventListener('click', async () => {
   } catch (err) {
     status('download failed: ' + (err.message || err), true);
   }
+});
+
+$('downloadsvg').addEventListener('click', () => {
+  if (!current || !current.svg) return;
+  const blob = new Blob([current.svg], { type: 'image/svg+xml;charset=utf-8' });
+  downloadBlob(blob, `necrometer-${current.r.subject || 'card'}.svg`);
+  status('card downloaded as SVG');
 });
 
 const u = new URLSearchParams(location.search).get('u');
