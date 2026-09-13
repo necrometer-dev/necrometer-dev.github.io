@@ -18,27 +18,13 @@ permissions: { contents: write }
 jobs:
   necrometer:
     runs-on: ubuntu-latest
-    env:
-      # Built-in token sees your own private repos too. For an org with private
-      # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT, repo read).
-      GH_TOKEN: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: summon the necrometer
-        run: |
-          cd /tmp
-          REL=https://github.com/necrometer-dev/necrometer/releases/download/v0.1.0
-          curl -sSLO $REL/necrometer-x86_64-unknown-linux-musl.tar.gz
-          curl -sSLO $REL/SHA256SUMS
-          sha256sum -c SHA256SUMS
-          tar xzf necrometer-x86_64-unknown-linux-musl.tar.gz
-      - run: /tmp/necrometer card "$GITHUB_REPOSITORY_OWNER" necrometer.svg
-      - run: |
-          git config user.name "necrometer[bot]"
-          git config user.email "bot@necrometer.dev"
-          git add necrometer.svg
-          git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
-          git push
+      - uses: necrometer-dev/necrometer-action@v1
+        with:
+          # GITHUB_TOKEN covers your own private repos. For an org with private
+          # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT).
+          token: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
 ```
 
 ### 2. Add this line to the repository's `README.md`, just under the title
@@ -62,13 +48,15 @@ gh workflow run necrometer
 
 ## Rules
 
-- Do **not** create `necrometer.svg` by hand — the workflow generates and
+- Do **not** create `necrometer.svg` by hand — the action generates and
   commits it. If the user wants it sooner, trigger the workflow.
-- Do **not** alter the download steps — the release is pinned to `v0.1.0` and
-  `sha256sum -c` must pass before the binary runs. If checksum verification
-  fails, stop and report it; do not bypass it.
-- If the workflow fails with a 403/404 on the GitHub API, the repo is an org
-  with private repositories — tell the user to add a `NECRO_TOKEN` secret
+- Do **not** modify or replace the action's steps —
+  `necrometer-dev/necrometer-action` summons a release binary pinned to
+  `v0.1.0` and runs `sha256sum -c` before executing it. Tampering with that is
+  a supply-chain downgrade; if checksum verification fails in a run, stop and
+  report it.
+- If the run fails with a 403/404 on the GitHub API, the repo belongs to an
+  org with private repositories — tell the user to add a `NECRO_TOKEN` secret
   (fine-grained PAT, repo read on the org's repos).
 - `necrometer.svg` goes at repo root next to `README.md`; the markdown
   references it relatively.
@@ -80,4 +68,4 @@ gh workflow run necrometer
 
 ---
 
-*the source of truth: [github.com/necrometer-dev/necrometer](https://github.com/necrometer-dev/necrometer) · read your own grave: [necrometer.dev](https://necrometer.dev)*
+*the source of truth: [github.com/necrometer-dev/necrometer](https://github.com/necrometer-dev/necrometer) · the action: [necrometer-dev/necrometer-action](https://github.com/necrometer-dev/necrometer-action) · read your own grave: [necrometer.dev](https://necrometer.dev)*

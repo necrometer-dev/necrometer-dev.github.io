@@ -6,24 +6,8 @@ permissions: { contents: write }
 jobs:
   necrometer:
     runs-on: ubuntu-latest
-    env:
-      # Built-in token sees your own private repos too. For an org with private
-      # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT, repo read).
-      GH_TOKEN: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: summon the necrometer
-        run: |
-          cd /tmp
-          REL=https://github.com/necrometer-dev/necrometer/releases/download/v0.1.0
-          curl -sSLO $REL/necrometer-x86_64-unknown-linux-musl.tar.gz
-          curl -sSLO $REL/SHA256SUMS
-          sha256sum -c SHA256SUMS
-          tar xzf necrometer-x86_64-unknown-linux-musl.tar.gz
-      - run: /tmp/necrometer card "$GITHUB_REPOSITORY_OWNER" necrometer.svg
-      - run: |
-          git config user.name "necrometer[bot]"
-          git config user.email "bot@necrometer.dev"
-          git add necrometer.svg
-          git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
-          git push
+      - uses: necrometer-dev/necrometer-action@v1
+        with:
+          token: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}

@@ -17,13 +17,15 @@ database, no per-user image hosting. Everything happens in the visitor's
 browser:
 
 1. `necrometer.js` fetches repos straight from `api.github.com` (CORS-allowed,
-   parallel pagination, optional never-stored PAT for private graves)
+   parallel pagination)
 2. the **Rust/WASM engine** (`pkg/`, built from
    [necrometer-dev/necrometer](https://github.com/necrometer-dev/necrometer))
    analyzes the bodies and renders the card — pure JS fallback if wasm fails
-3. you copy a **workflow** — a GitHub Action that downloads the pinned,
-   checksum-verified release binary and re-commits `necrometer.svg` to *your*
-   repo daily. GitHub runs the compute; we host nothing.
+3. you copy a **workflow** — three lines calling
+   [`necrometer-dev/necrometer-action`](https://github.com/necrometer-dev/necrometer-action),
+   which downloads the pinned, checksum-verified release binary and re-commits
+   `necrometer.svg` to *your* repo daily. GitHub runs the compute; we host
+   nothing.
 
 ## the ticker
 
@@ -38,8 +40,10 @@ with the release binary.
 index.html       the whole page — haunted CRT, fonts, ritual logic
 necrometer.js    JS engine: api fetch + fallback analyze/render
 pkg/             wasm build of the Rust engine (generated — don't edit)
+agents.md        the install rite, written for coding agents to fetch
 hall.txt         names for the weekly census
 hall.json        generated ticker data
+assets/          brand — skull icon + og banner (svg sources too)
 necrometer.svg   this org's own card (kept fresh by necrometer.yml)
 CNAME            necrometer.dev
 ```

@@ -8,7 +8,13 @@
 <meta property="og:title" content="the necrometer">
 <meta property="og:description" content="an instrument for measuring how dead your github repos are">
 <meta property="og:url" content="https://necrometer.dev">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💀</text></svg>">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://necrometer.dev/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="the necrometer">
+<meta name="twitter:description" content="how dead is your github? get a card for your README — carves itself daily, hosted by nobody">
+<meta name="twitter:image" content="https://necrometer.dev/assets/og.png">
+<link rel="icon" type="image/png" href="assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=IM+Fell+English:ital@0;1&family=VT323&display=swap" rel="stylesheet">
@@ -187,7 +193,7 @@ try {
   };
 } catch (_) { /* pure-JS necromancy */ }
 
-const WORKFLOW = (u) => `name: necrometer
+const WORKFLOW = () => `name: necrometer
 on:
   schedule: [{cron: "17 6 * * *"}]   # daily
   workflow_dispatch:                  # manual "run now" — also runs on first push
@@ -195,27 +201,13 @@ permissions: { contents: write }
 jobs:
   necrometer:
     runs-on: ubuntu-latest
-    env:
-      # Built-in token sees your own private repos too. For an org with private
-      # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT, repo read).
-      GH_TOKEN: \${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: summon the necrometer
-        run: |
-          cd /tmp
-          REL=https://github.com/necrometer-dev/necrometer/releases/download/v0.1.0
-          curl -sSLO $REL/necrometer-x86_64-unknown-linux-musl.tar.gz
-          curl -sSLO $REL/SHA256SUMS
-          sha256sum -c SHA256SUMS
-          tar xzf necrometer-x86_64-unknown-linux-musl.tar.gz
-      - run: /tmp/necrometer card "$GITHUB_REPOSITORY_OWNER" necrometer.svg
-      - run: |
-          git config user.name "necrometer[bot]"
-          git config user.email "bot@necrometer.dev"
-          git add necrometer.svg
-          git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
-          git push`;
+      - uses: necrometer-dev/necrometer-action@v1
+        with:
+          # GITHUB_TOKEN covers your own private repos. For an org with private
+          # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT).
+          token: \${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}`;
 
 const AGENT_RITE = `Add a necrometer card to this repository.
 
@@ -231,7 +223,7 @@ Replace OWNER with the repository owner's GitHub login (gh repo view --json owne
 
 3. Commit both files on the default branch and push, then trigger the workflow once (gh workflow run necrometer, or the Actions tab) so the card appears immediately. It re-carves daily after that.
 
-Rules: do NOT create necrometer.svg by hand — the workflow generates it. Do NOT alter the download/checksum steps — the release is pinned and SHA256-verified. If the repo needs private-repo visibility, add a NECRO_TOKEN secret (fine-grained PAT, repo read). Full rite: https://necrometer.dev/agents.md`;
+Rules: do NOT create necrometer.svg by hand — the action generates it. The action summons a pinned release binary and SHA256-verifies it before running; do not modify or replace its steps. If the repo needs private-org visibility, add a NECRO_TOKEN secret (fine-grained PAT, repo read). Full rite: https://necrometer.dev/agents.md`;
 
 const RITES = ['rattling the coffins', 'reading the entrails', 'knocking on repo lids',
   'consulting the void', 'counting the maggots', 'checking for a pulse',
