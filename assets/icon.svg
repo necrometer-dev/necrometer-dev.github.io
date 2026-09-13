@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 120 120">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="52%" r="55%">
+      <stop offset="0%" stop-color="#1a1430"/>
+      <stop offset="60%" stop-color="#0d0a18"/>
+      <stop offset="100%" stop-color="#0a0812"/>
+    </radialGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#glow)"/>
+  <!-- halo -->
+  <ellipse cx="60" cy="14" rx="19" ry="6.5" fill="none" stroke="#ffd866" stroke-width="4.5"/>
+  <!-- skull: card geometry scaled x3.2, center (60,66) -->
+  <path d="M 26.4,75.6 A 33.6 33.6 0 1 1 93.6,75.6 L 93.6,85.2 Q 93.6,99.6 80.8,99.6 L 39.2,99.6 Q 26.4,99.6 26.4,85.2 Z" fill="#e8e6df"/>
+  <!-- teeth ticks -->
+  <path d="M 48.8,99.6 v -9.6 M 60,99.6 v -9.6 M 71.2,99.6 v -9.6" stroke="#16121e" stroke-width="3.2"/>
+  <!-- happy eyes ^^ -->
+  <path d="M 39.5,67.6 Q 47.2,57.4 54.9,67.6" stroke="#16121e" stroke-width="4.8" fill="none" stroke-linecap="round"/>
+  <path d="M 65.1,67.6 Q 72.8,57.4 80.5,67.6" stroke="#16121e" stroke-width="4.8" fill="none" stroke-linecap="round"/>
+  <!-- nose -->
+  <path d="M 60,80.4 l -4.5,-7 l 9,0 Z" fill="#16121e"/>
+  <!-- blush -->
+  <ellipse cx="34" cy="78" rx="6.5" ry="3.6" fill="#ffb0c0" opacity="0.55"/>
+  <ellipse cx="86" cy="78" rx="6.5" ry="3.6" fill="#ffb0c0" opacity="0.55"/>
+</svg>
