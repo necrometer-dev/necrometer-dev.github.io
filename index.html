@@ -130,11 +130,6 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
     <input id="subject" placeholder="whose soul shall we weigh?" autofocus autocomplete="off">
     <button type="submit">exhume</button>
   </form>
-  <details style="margin:0 0 12px">
-    <summary class="dim">private graves? bring a token</summary>
-    <p class="dim">fine-grained PAT with repo read. sent from your browser straight to api.github.com — never stored, never proxied.</p>
-    <input id="token" type="password" placeholder="github_pat_…" autocomplete="off" style="width:100%">
-  </details>
   <div id="status"></div>
 
   <section id="result">
@@ -152,13 +147,13 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
       </li>
     </ol>
 
-    <details>
-      <summary>let your agent do the digging — hand it this scroll</summary>
-      <p class="dim">paste this to any coding agent and it will carve the card into whatever repo it's working on — or just point it at <a href="agents.md">necrometer.dev/agents.md</a>.</p>
-      <div class="row"><pre id="agentrite" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copyag">copy</button></div>
-    </details>
-
   </section>
+
+  <details>
+    <summary>let an agent do the digging — hand it this scroll</summary>
+    <p class="dim">paste this to any coding agent and it will carve the card into whatever repo it's working on — or just point it at <a href="agents.md">necrometer.dev/agents.md</a>.</p>
+    <div class="row"><pre id="agentrite" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copyag">copy</button></div>
+  </details>
 
   <footer>
     necrometer.dev — conjured client-side; your api calls go straight to github.
@@ -222,15 +217,17 @@ jobs:
           git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
           git push`;
 
-const AGENT_RITE = (u) => `Add a necrometer card to this repository.
+const AGENT_RITE = `Add a necrometer card to this repository.
 
 1. Create .github/workflows/necrometer.yml with EXACTLY this content:
 
-${WORKFLOW(u)}
+${WORKFLOW()}
 
 2. Add this line to README.md, just under the title:
 
-[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(u)})
+[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=OWNER)
+
+Replace OWNER with the repository owner's GitHub login (gh repo view --json owner -q .owner.login).
 
 3. Commit both files on the default branch and push, then trigger the workflow once (gh workflow run necrometer, or the Actions tab) so the card appears immediately. It re-carves daily after that.
 
@@ -254,8 +251,7 @@ async function run(name) {
   $('result').style.display = 'none';
   startRites();
   try {
-    const token = $('token').value.trim() || null;
-    const repos = await Necrometer.fetchRepos(name, (n) => { dug += n; }, token);
+    const repos = await Necrometer.fetchRepos(name, (n) => { dug += n; });
     const r = Engine.analyze(name, repos);
     current = { r, svg: Engine.renderCard(r) };
     show(r);
@@ -278,7 +274,6 @@ function show(r) {
   $('snippet').textContent =
     `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = WORKFLOW(r.subject);
-  $('agentrite').textContent = AGENT_RITE(r.subject);
 
   $('result').style.display = 'block';
 }
@@ -290,6 +285,7 @@ const copier = (el) => () => navigator.clipboard.writeText(el.textContent).then(
 $('copy').addEventListener('click', copier($('snippet')));
 $('copywf').addEventListener('click', copier($('workflow')));
 $('copyag').addEventListener('click', copier($('agentrite')));
+$('agentrite').textContent = AGENT_RITE;
 
 const u = new URLSearchParams(location.search).get('u');
 if (u) { $('subject').value = u; run(u); }
