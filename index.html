@@ -59,7 +59,7 @@ pre { background:var(--inset); border:1px solid var(--border); padding:12px; bor
   overflow-x:auto; font-size:16px; white-space:pre-wrap; word-break:break-all; color:var(--phos);
   box-shadow:inset 0 0 14px rgba(0,0,0,.5) }
 code { background:var(--inset); padding:2px 6px; border-radius:3px; font-size:16px; color:var(--phos) }
-.hint, .dim { color:var(--dim); font-size:16px }
+.dim { color:var(--dim); font-size:16px }
 
 /* corpse ticker — stock tape of the dead, under the header */
 .ticker { border-top:1px solid var(--border); border-bottom:1px solid var(--border);
@@ -170,10 +170,26 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
 <div class="wisp"></div><div class="wisp"></div><div class="wisp"></div>
 
 <script src="necrometer.js"></script>
-<script>
+<script type="module">
+import init, { analyze_repos, render_card } from './pkg/necrometer.js';
+
 const $ = (id) => document.getElementById(id);
 const status = (msg, isErr) => { $('status').textContent = msg; $('status').className = isErr ? 'err' : ''; };
 let current = null;
+let cardUrl = null;
+
+// The engine is Rust compiled to wasm — fetch stays JS-side (browser-native
+// CORS), the necromancy runs in the wasm. Falls back to the pure-JS engine
+// (necrometer.js) if wasm can't load.
+let Engine = { analyze: Necrometer.analyze, renderCard: Necrometer.renderCard, engine: 'js' };
+try {
+  await init('./pkg/necrometer_bg.wasm');
+  Engine = {
+    analyze: (name, repos) => JSON.parse(analyze_repos(name, JSON.stringify(repos))),
+    renderCard: (r) => render_card(JSON.stringify(r)),
+    engine: 'rust/wasm',
+  };
+} catch (_) { /* pure-JS necromancy */ }
 
 const WORKFLOW = (u) => `name: necrometer
 on:
@@ -189,9 +205,14 @@ jobs:
       GH_TOKEN: \${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          curl -sSL https://necrometer.dev/necrometer.js -o /tmp/n.js
-          node /tmp/n.js "$GITHUB_REPOSITORY_OWNER" necrometer.svg
+      - name: summon the necrometer
+        run: |
+          REL=https://github.com/necrometer-dev/necrometer/releases/download/v0.1.0
+          curl -sSL $REL/necrometer-x86_64-unknown-linux-musl.tar.gz -o /tmp/n.tgz
+          curl -sSL $REL/SHA256SUMS -o /tmp/SHA256SUMS
+          (cd /tmp && sha256sum -c --ignore-missing SHA256SUMS)
+          tar xzf /tmp/n.tgz -C /tmp
+      - run: /tmp/necrometer card "$GITHUB_REPOSITORY_OWNER" necrometer.svg
       - run: |
           git config user.name "necrometer[bot]"
           git config user.email "bot@necrometer.dev"
@@ -219,8 +240,8 @@ async function run(name) {
   try {
     const token = $('token').value.trim() || null;
     const repos = await Necrometer.fetchRepos(name, (n) => { dug += n; }, token);
-    const r = Necrometer.analyze(name, repos);
-    current = { r, svg: Necrometer.renderCard(r) };
+    const r = Engine.analyze(name, repos);
+    current = { r, svg: Engine.renderCard(r) };
     show(r);
     status('');
     history.replaceState(null, '', '?u=' + encodeURIComponent(name));
@@ -232,8 +253,9 @@ async function run(name) {
 }
 
 function show(r) {
-  const blob = new Blob([current.svg], { type: 'image/svg+xml' });
-  $('card').src = URL.createObjectURL(blob);
+  if (cardUrl) URL.revokeObjectURL(cardUrl);
+  cardUrl = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
+  $('card').src = cardUrl;
   $('summary').textContent = r.total === 0
     ? 'no repos — nothing to bury'
     : `${r.index}% necrotic — ${r.title} · ${r.total} souls · ${r.starsStranded} stars stranded`;
@@ -244,7 +266,7 @@ function show(r) {
   $('result').style.display = 'block';
 }
 
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 $('f').addEventListener('submit', (e) => { e.preventDefault(); run($('subject').value); });
 $('dl').addEventListener('click', () => {

@@ -1,0 +1,28 @@
+# hall of corpses — one account per line. Weekly Action rebuilds hall.json.
+# famous personal accounts
+torvalds
+defunkt
+sindresorhus
+tj
+antirez
+mitchellh
+gaearon
+jashkenas
+fabpot
+ruanyf
+kripken
+ssloy
+# orgs known for big footprints
+google
+microsoft
+facebook
+twitter-archive
+angular
+spring-projects
+# house accounts
+UberMetroid
+studio2201
+idlescreen
+openOODA
+bumtrips
+necrometer-dev

@@ -20,13 +20,15 @@
   // Works for users AND orgs. /users/{n}/repos is public-only even with a token —
   // so with a token we resolve the right endpoint: /orgs for orgs, /user for
   // the token's own account (sees private repos), /users otherwise.
+  // First page sequential; once we know there are more, fetch the rest in two
+  // parallel batches (2-4, then 5-10). 10 sequential round-trips on a
+  // 1000-repo account was the worst case.
   async function fetchRepos(name, onPage, token) {
     const headers = { Accept: 'application/vnd.github+json' };
     if (token) headers.Authorization = `Bearer ${token}`;
     const base = token ? await resolveEndpoint(name, headers) : `${API}/users/${enc(name)}/repos`;
-    const out = [];
-    for (let page = 1; page <= MAX_PAGES; page++) {
-      const sep = base.includes('?') ? '&' : '?';
+    const sep = base.includes('?') ? '&' : '?';
+    const get = async (page) => {
       const resp = await fetch(`${base}${sep}per_page=100&page=${page}`, { headers });
       if (resp.status === 404) throw new NotFound(`no such user or org: ${name}`);
       if (resp.status === 403 || resp.status === 429) {
@@ -38,9 +40,16 @@
       }
       if (!resp.ok) throw new Upstream(`GitHub: HTTP ${resp.status}`);
       const rows = await resp.json();
-      out.push(...rows);
       if (onPage) onPage(rows.length, resp.headers.get('x-ratelimit-remaining'));
-      if (rows.length < 100) break;
+      return rows;
+    };
+    const first = await get(1);
+    if (first.length < 100) return first;
+    const out = [...first];
+    for (const batch of [[2, 3, 4], [5, 6, 7, 8, 9, 10]]) {
+      const pages = await Promise.all(batch.map(get));
+      for (const rows of pages) out.push(...rows);
+      if (pages.some((r) => r.length < 100)) break;
     }
     return out;
   }
