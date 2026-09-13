@@ -53,25 +53,30 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:12px; border-top:1px so
     <input id="subject" placeholder="github username or org" autofocus autocomplete="off">
     <button type="submit">exhume</button>
   </form>
+  <details style="margin:-12px 0 12px">
+    <summary style="font-weight:400;color:var(--dim);font-size:13px">private repos? use a token</summary>
+    <p class="dim">Fine-grained PAT with repo read. Sent from your browser straight to api.github.com — never stored, never proxied.</p>
+    <input id="token" type="password" placeholder="github_pat_…" autocomplete="off" style="width:100%">
+  </details>
   <div id="status"></div>
 
   <section id="result">
     <img id="card" alt="necrometer card">
     <p class="dim" id="summary"></p>
 
-    <h2>put it in your README</h2>
+    <h2>put it in your README — it stays alive</h2>
     <ol class="steps">
-      <li><button id="dl">download necrometer.svg</button> — save it to your repo (next to the README)</li>
+      <li>paste this into <code>.github/workflows/necrometer.yml</code> — it generates the card and re-renders it daily (run it once from the Actions tab to see it now):
+        <div class="row"><pre id="workflow" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copywf">copy</button></div>
+      </li>
       <li>paste this into your README.md:
         <div class="row"><pre id="snippet" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copy">copy</button></div>
       </li>
     </ol>
 
     <details>
-      <summary>make it update itself (optional)</summary>
-      <p class="dim">Drop this in <code>.github/workflows/necrometer.yml</code> — GitHub re-renders your card daily. Still nothing hosted by anyone.</p>
-      <pre id="workflow"></pre>
-      <button class="ghost" id="copywf">copy workflow</button>
+      <summary>just want a snapshot instead?</summary>
+      <p class="dim"><button id="dl">download necrometer.svg</button> — commit it next to your README. Frozen in time; no workflow needed.</p>
     </details>
 
     <div id="graveyard"></div>
@@ -91,12 +96,16 @@ let current = null;
 
 const WORKFLOW = (u) => `name: necrometer
 on:
-  schedule: [{cron: "17 6 * * *"}]
-  workflow_dispatch:
+  schedule: [{cron: "17 6 * * *"}]   # daily
+  workflow_dispatch:                  # manual "run now" — also runs on first push
 permissions: { contents: write }
 jobs:
   necrometer:
     runs-on: ubuntu-latest
+    env:
+      # Built-in token sees your own private repos too. For an org with private
+      # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT, repo read).
+      GH_TOKEN: \${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -115,8 +124,9 @@ async function run(name) {
   status('digging up ' + name + '…');
   $('result').style.display = 'none';
   try {
+    const token = $('token').value.trim() || null;
     const repos = await Necrometer.fetchRepos(name, (n, left) =>
-      status(`digging… ${n} repos on this page${left != null ? ` · ${left} API calls left` : ''}`));
+      status(`digging… ${n} repos on this page${left != null ? ` · ${left} API calls left` : ''}`), token);
     const r = Necrometer.analyze(name, repos);
     current = { r, svg: Necrometer.renderCard(r) };
     show(r);

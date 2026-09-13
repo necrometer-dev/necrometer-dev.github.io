@@ -17,13 +17,17 @@
   class NotFound extends Error {}
   class Upstream extends Error {}
 
-  // Works for users AND orgs (orgs' public repos come through /users/).
-  async function fetchRepos(name, onPage) {
+  // Works for users AND orgs. /users/{n}/repos is public-only even with a token —
+  // so with a token we resolve the right endpoint: /orgs for orgs, /user for
+  // the token's own account (sees private repos), /users otherwise.
+  async function fetchRepos(name, onPage, token) {
+    const headers = { Accept: 'application/vnd.github+json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const base = token ? await resolveEndpoint(name, headers) : `${API}/users/${enc(name)}/repos`;
     const out = [];
     for (let page = 1; page <= MAX_PAGES; page++) {
-      const resp = await fetch(`${API}/users/${encodeURIComponent(name)}/repos?per_page=100&page=${page}`, {
-        headers: { Accept: 'application/vnd.github+json' },
-      });
+      const sep = base.includes('?') ? '&' : '?';
+      const resp = await fetch(`${base}${sep}per_page=100&page=${page}`, { headers });
       if (resp.status === 404) throw new NotFound(`no such user or org: ${name}`);
       if (resp.status === 403 || resp.status === 429) {
         const reset = resp.headers.get('x-ratelimit-reset');
@@ -39,6 +43,26 @@
       if (rows.length < 100) break;
     }
     return out;
+  }
+
+  const enc = encodeURIComponent;
+
+  async function resolveEndpoint(name, headers) {
+    try {
+      const org = await fetch(`${API}/orgs/${enc(name)}`, { headers });
+      if (org.ok) {
+        const j = await org.json();
+        if (j.type === 'Organization')
+          return `${API}/orgs/${enc(name)}/repos?type=all`;
+      }
+      const me = await fetch(`${API}/user`, { headers });
+      if (me.ok) {
+        const m = await me.json();
+        if (m.login && m.login.toLowerCase() === name.toLowerCase())
+          return `${API}/user/repos?visibility=all&affiliation=owner`;
+      }
+    } catch (_) { /* fall through to public endpoint */ }
+    return `${API}/users/${enc(name)}/repos`;
   }
 
   // ---------- metrics ----------
@@ -262,7 +286,8 @@ if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.m
     process.exit(2);
   }
   (async () => {
-    const repos = await fetchRepos(name);
+    const token = process.env.NECRO_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+    const repos = await fetchRepos(name, null, token);
     const svg = renderCard(analyze(name, repos));
     require('fs').writeFileSync(out, svg);
     console.log(`wrote ${out}`);
