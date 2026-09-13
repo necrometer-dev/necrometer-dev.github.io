@@ -148,13 +148,37 @@ function show(r) {
   $('workflow').textContent = WORKFLOW(r.subject);
 
   if (r.corpses.length) {
-    const rows = r.corpses.map(c =>
-      `<tr class="fate-${Necrometer.FATE_LABEL[c.fate]}"><td><a href="${c.url}">${esc(c.name)}</a>${c.stillborn ? ' <span class="stillborn">stillborn</span>' : ''}</td><td>${c.daysIdle}d</td><td>${c.stars}</td><td>${Necrometer.FATE_LABEL[c.fate]}</td></tr>`).join('');
-    $('graveyard').innerHTML = `<h2>the graveyard</h2><table><tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th></tr>${rows}</table>`;
+    $('graveyard').innerHTML = `<h2>the graveyard</h2><table><tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}</table>`;
+    epitaphs(r, $('token').value.trim() || null).then(() => {
+      if (current && current.r === r)
+        $('graveyard').querySelector('table').innerHTML =
+          `<tr><th>repo</th><th>idle</th><th>stars</th><th>fate</th><th>last words</th></tr>${corpseRows(r)}`;
+    });
   } else {
     $('graveyard').innerHTML = '<p class="dim">no corpses. suspicious.</p>';
   }
   $('result').style.display = 'block';
+}
+
+function corpseRows(r) {
+  return r.corpses.map(c =>
+    `<tr class="fate-${Necrometer.FATE_LABEL[c.fate]}"><td><a href="${c.url}">${esc(c.name)}</a>${c.stillborn ? ' <span class="stillborn">stillborn</span>' : ''}</td><td>${c.daysIdle}d</td><td>${c.stars}</td><td>${Necrometer.FATE_LABEL[c.fate]}</td><td class="dim">${c.epitaph ? '"' + esc(c.epitaph) + '"' : '…'}</td></tr>`).join('');
+}
+
+// Last words: the repo's final commit message. Top corpses only — one API call each.
+async function epitaphs(r, token) {
+  const heads = { Accept: 'application/vnd.github+json' };
+  if (token) heads.Authorization = `Bearer ${token}`;
+  await Promise.all(r.corpses.slice(0, 10).map(async (c) => {
+    const m = c.url.match(/github\.com\/([^/]+)\/([^/]+)/);
+    if (!m) return;
+    try {
+      const resp = await fetch(`https://api.github.com/repos/${m[1]}/${m[2]}/commits?per_page=1`, { headers: heads });
+      if (!resp.ok) return;
+      const [first] = await resp.json();
+      c.epitaph = (first?.commit?.message || '').split('\n')[0].slice(0, 48) || null;
+    } catch (_) {}
+  }));
 }
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');

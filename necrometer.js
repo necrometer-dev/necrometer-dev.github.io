@@ -91,6 +91,16 @@
     return 'Repo Necromancer';
   }
 
+  function flavorFor(index, total) {
+    if (total === 0) return 'no repos. no pulse. nothing.';
+    if (total < 3) return 'not enough bodies to judge';
+    if (index < 15) return 'nothing dies here. suspicious.';
+    if (index < 35) return 'a few corpses, like everyone';
+    if (index < 60) return 'starts things. finishes? unclear.';
+    if (index < 80) return 'more graves than gardens';
+    return 'not a profile — a cemetery';
+  }
+
   function analyze(subject, repos) {
     const now = Date.now();
     const owned = repos.filter((r) => !r.fork);
@@ -129,6 +139,7 @@
       subject,
       index,
       title: titleFor(index, total),
+      flavor: flavorFor(index, total),
       counts,
       total,
       starsStranded,
@@ -199,9 +210,15 @@
     g += `<line x1="${cx - r - 8}" y1="${cy}" x2="${cx + r + 8}" y2="${cy}" stroke="${p.border}" stroke-width="1"/>`;
     g += `<text x="${cx - r - 2}" y="${cy + 14}" text-anchor="middle" font-size="9" fill="${p.dim}">0</text>`;
     g += `<text x="${cx + r + 2}" y="${cy + 14}" text-anchor="middle" font-size="9" fill="${p.dim}">&#9760;</text>`;
+    // needle: swings in from the left (alive) end on load — SMIL, works in <img>
     const theta = 180 - index * 1.8;
-    g += `<polygon points="${pts(cx, cy, r - 12, theta)} ${pts(cx, cy, 4, theta + 90)} ${pts(cx, cy, 4, theta - 90)}" fill="${p.needle}"/>`;
-    g += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${p.bg}" stroke="${p.needle}" stroke-width="1.5"/>`;
+    const swing = Math.max(30, 180 - theta); // at least a little drama
+    g += `<g><animateTransform attributeName="transform" type="rotate" `
+      + `values="-${swing.toFixed(1)} ${cx} ${cy};4 ${cx} ${cy};0 ${cx} ${cy}" `
+      + `keyTimes="0;0.8;1" dur="1.1s" fill="freeze"/>`
+      + `<polygon points="${pts(cx, cy, r - 12, theta)} ${pts(cx, cy, 4, theta + 90)} ${pts(cx, cy, 4, theta - 90)}" fill="${p.needle}"/>`
+      + `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${p.bg}" stroke="${p.needle}" stroke-width="1.5"/>`
+      + `</g>`;
     g += `<text x="${cx}" y="${cy + 32}" text-anchor="middle" font-size="10" letter-spacing="2" fill="${p.dim}">NECROMETER</text>`;
     return g;
   }
@@ -213,34 +230,62 @@
     if (reading.total === 0) {
       return s + `<text x="${x}" y="60" font-size="13" fill="${p.dim}">no repos — nothing to bury</text>`;
     }
-    s += `<text x="${x}" y="72" font-size="34" font-weight="700" fill="${p.accent}">${reading.index}%</text>`;
-    s += `<text x="${x + 78}" y="72" font-size="12" fill="${p.dim}">necrotic</text>`;
-    s += `<text x="${x}" y="94" font-size="13" font-style="italic" fill="${p.accent}">${esc(reading.title)}</text>`;
+    s += `<text x="${x}" y="70" font-size="34" font-weight="700" fill="${p.accent}">${reading.index}%</text>`;
+    s += `<text x="${x + 78}" y="70" font-size="12" fill="${p.dim}">necrotic</text>`;
+    s += `<text x="${x}" y="90" font-size="13" font-weight="600" fill="${p.accent}">${esc(reading.title)}</text>`;
+    s += `<text x="${x}" y="105" font-size="10.5" font-style="italic" fill="${p.dim}">${esc(reading.flavor)}</text>`;
 
     const fateLine = reading.counts
       .map((n, i) => (n > 0 ? `${n} ${FATE_LABEL[i]}` : null))
       .filter(Boolean)
       .join(' · ');
-    s += `<text x="${x}" y="122" font-size="11" fill="${p.text}">${esc(fateLine)}</text>`;
+    s += `<text x="${x}" y="126" font-size="11" fill="${p.text}">${esc(fateLine)}</text>`;
 
-    let y = 142;
+    let y = 143;
     if (reading.starsStranded > 0) {
       s += `<text x="${x}" y="${y}" font-size="11" fill="${p.dim}">${reading.starsStranded} stars stranded on dead repos</text>`;
-      y += 16;
+      y += 15;
     }
     if (reading.oldestCorpse) {
-      s += `<text x="${x}" y="${y}" font-size="11" fill="${p.dim}">oldest corpse: ${esc(reading.oldestCorpse.name)} (${reading.oldestCorpse.daysIdle}d)</text>`;
-      y += 16;
+      const name = reading.oldestCorpse.name.length > 20
+        ? reading.oldestCorpse.name.slice(0, 19) + '…' : reading.oldestCorpse.name;
+      s += `<text x="${x}" y="${y}" font-size="11" fill="${p.dim}">oldest corpse: ${esc(name)} (${reading.oldestCorpse.daysIdle}d)</text>`;
+      y += 15;
     }
-    if (reading.daysSinceAnyPush != null) {
-      const msg = reading.daysSinceAnyPush === 0 ? 'signs of life today' : `last sign of life: ${reading.daysSinceAnyPush}d ago`;
-      s += `<text x="${x}" y="${y}" font-size="11" fill="${p.dim}">${msg}</text>`;
-      y += 16;
-    }
-    if (reading.stillborn > 0) {
-      s += `<text x="${x}" y="${y}" font-size="11" fill="${p.dim}">${reading.stillborn} stillborn repos</text>`;
-    }
+    const bits = [];
+    if (reading.stillborn > 0) bits.push(`${reading.stillborn} stillborn`);
+    if (reading.daysSinceAnyPush != null)
+      bits.push(reading.daysSinceAnyPush === 0 ? 'signs of life today' : `last sign of life: ${reading.daysSinceAnyPush}d ago`);
+    if (bits.length)
+      s += `<text x="${x}" y="${y}" font-size="11" fill="${p.dim}">${esc(bits.join(' · '))}</text>`;
+
+    s += ekg(reading.index, p);
     return s;
+  }
+
+  // Heartbeat strip under the stats — spiky when healthy, flatlines when dead.
+  function ekg(index, p) {
+    const x0 = 200, w = 235, base = 184;
+    const amp = Math.max(0, 1 - index / 110); // 1 at 0%, ~0 at 100%
+    const beats = index < 30 ? 4 : index < 60 ? 3 : index < 80 ? 2 : index < 90 ? 1 : 0;
+    let d = `M ${x0},${base}`;
+    let x = x0;
+    const flat = () => { x += w / 12; d += ` L ${f1(x)},${base}`; };
+    for (let i = 0; i < beats; i++) {
+      const a = 12 * amp;
+      x += w / 24; d += ` L ${f1(x)},${f1(base)}`;
+      x += w / 48; d += ` L ${f1(x)},${f1(base - a * 0.4)}`;
+      x += w / 48; d += ` L ${f1(x)},${f1(base - a)}`;
+      x += w / 48; d += ` L ${f1(x)},${f1(base + a * 0.5)}`;
+      x += w / 48; d += ` L ${f1(x)},${f1(base)}`;
+      x += w / 16; d += ` L ${f1(x)},${f1(base)}`;
+    }
+    while (x < x0 + w) flat();
+    const color = index >= 80 ? '#f85149' : p.accent;
+    return `<path d="${d}" stroke="${color}" stroke-width="1.4" fill="none" `
+      + `stroke-dasharray="900" stroke-dashoffset="0" opacity="0.85">`
+      + `<animate attributeName="stroke-dashoffset" from="900" to="0" dur="1.6s" fill="freeze"/>`
+      + `</path>`;
   }
 
   function easterEgg(index) {
