@@ -153,8 +153,9 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
     </ol>
 
     <details>
-      <summary>a lesser rite — snapshot only</summary>
-      <p class="dim"><button class="ghost" id="dl">download necrometer.svg</button> — commit next to your README. frozen in time; it will never change. like the dead.</p>
+      <summary>let your agent do the digging — hand it this scroll</summary>
+      <p class="dim">paste this to any coding agent and it will carve the card into whatever repo it's working on — or just point it at <a href="agents.md">necrometer.dev/agents.md</a>.</p>
+      <div class="row"><pre id="agentrite" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copyag">copy</button></div>
     </details>
 
   </section>
@@ -221,6 +222,20 @@ jobs:
           git diff --cached --quiet || git commit -m "necrometer: $(date +%F)"
           git push`;
 
+const AGENT_RITE = (u) => `Add a necrometer card to this repository.
+
+1. Create .github/workflows/necrometer.yml with EXACTLY this content:
+
+${WORKFLOW(u)}
+
+2. Add this line to README.md, just under the title:
+
+[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(u)})
+
+3. Commit both files on the default branch and push, then trigger the workflow once (gh workflow run necrometer, or the Actions tab) so the card appears immediately. It re-carves daily after that.
+
+Rules: do NOT create necrometer.svg by hand — the workflow generates it. Do NOT alter the download/checksum steps — the release is pinned and SHA256-verified. If the repo needs private-repo visibility, add a NECRO_TOKEN secret (fine-grained PAT, repo read). Full rite: https://necrometer.dev/agents.md`;
+
 const RITES = ['rattling the coffins', 'reading the entrails', 'knocking on repo lids',
   'consulting the void', 'counting the maggots', 'checking for a pulse',
   'lighting the black candles', 'whispering to the dead', 'sharpening the scalpel'];
@@ -263,6 +278,7 @@ function show(r) {
   $('snippet').textContent =
     `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = WORKFLOW(r.subject);
+  $('agentrite').textContent = AGENT_RITE(r.subject);
 
   $('result').style.display = 'block';
 }
@@ -270,15 +286,10 @@ function show(r) {
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 $('f').addEventListener('submit', (e) => { e.preventDefault(); run($('subject').value); });
-$('dl').addEventListener('click', () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
-  a.download = 'necrometer.svg';
-  a.click();
-});
 const copier = (el) => () => navigator.clipboard.writeText(el.textContent).then(() => status('copied — go carve it'));
 $('copy').addEventListener('click', copier($('snippet')));
 $('copywf').addEventListener('click', copier($('workflow')));
+$('copyag').addEventListener('click', copier($('agentrite')));
 
 const u = new URLSearchParams(location.search).get('u');
 if (u) { $('subject').value = u; run(u); }
