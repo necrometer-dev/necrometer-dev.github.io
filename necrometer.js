@@ -160,6 +160,9 @@
 
   const W = 495, H = 195;
   const FONT = "-apple-system,'Segoe UI',Roboto,Ubuntu,Cantarell,'Noto Sans',Helvetica,Arial,sans-serif";
+  // cute display font for titles/flavor — <img> SVGs can't load webfonts, so
+  // lean on the cute system fonts (Comic Sans on win, Chalkboard on mac).
+  const FONT_CUTE = "'Comic Sans MS','Chalkboard SE','Segoe Print'," + FONT;
 
   const f1 = (v) => v.toFixed(1);
 
@@ -231,14 +234,14 @@
   function stats(reading, p) {
     let s = '';
     const x = 200;
-    s += `<text x="${x}" y="32" font-size="15" font-weight="600" fill="${p.text}">@${esc(reading.subject)}</text>`;
+    s += `<text x="${x}" y="32" font-size="15" font-weight="600" fill="${p.text}" font-family="${FONT_CUTE}">@${esc(reading.subject)}</text>`;
     if (reading.total === 0) {
-      return s + `<text x="${x}" y="60" font-size="13" fill="${p.dim}">no repos — nothing to bury</text>`;
+      return s + `<text x="${x}" y="60" font-size="13" fill="${p.dim}" font-family="${FONT_CUTE}">no repos — nothing to bury</text>`;
     }
     s += `<text x="${x}" y="70" font-size="34" font-weight="700" fill="${p.accent}">${reading.index}%</text>`;
     s += `<text x="${x + 78}" y="70" font-size="12" fill="${p.dim}">necrotic</text>`;
-    s += `<text x="${x}" y="90" font-size="13" font-weight="600" fill="${p.accent}">${esc(reading.title)}</text>`;
-    s += `<text x="${x}" y="105" font-size="10.5" font-style="italic" fill="${p.dim}">${esc(reading.flavor)}</text>`;
+    s += `<text x="${x}" y="90" font-size="13" font-weight="600" fill="${p.accent}" font-family="${FONT_CUTE}">${esc(reading.title)}</text>`;
+    s += `<text x="${x}" y="105" font-size="10.5" font-style="italic" fill="${p.dim}" font-family="${FONT_CUTE}">${esc(reading.flavor)}</text>`;
 
     const fateLine = reading.counts
       .map((n, i) => (n > 0 ? `${n} ${FATE_LABEL[i]}` : null))
@@ -269,8 +272,10 @@
   }
 
   // Heartbeat strip under the stats — spiky when healthy, flatlines when dead.
+  // Ends before the watermark (which lives at x≈412-485). The line gets a
+  // proper send-off: a heart when healthy, a tiny skull when flatlined.
   function ekg(index, p) {
-    const x0 = 200, w = 235, base = 184;
+    const x0 = 200, w = 200, base = 184;
     const amp = Math.max(0, 1 - index / 110); // 1 at 0%, ~0 at 100%
     const beats = index < 30 ? 4 : index < 60 ? 3 : index < 80 ? 2 : index < 90 ? 1 : 0;
     let d = `M ${x0},${base}`;
@@ -287,10 +292,86 @@
     }
     while (x < x0 + w) flat();
     const color = index >= 80 ? '#f85149' : p.accent;
-    return `<path d="${d}" stroke="${color}" stroke-width="1.4" fill="none" `
+    let s = `<path d="${d}" stroke="${color}" stroke-width="1.4" fill="none" `
       + `stroke-dasharray="900" stroke-dashoffset="0" opacity="0.85">`
       + `<animate attributeName="stroke-dashoffset" from="900" to="0" dur="1.6s" fill="freeze"/>`
       + `</path>`;
+    if (index >= 80) {
+      s += `<text x="${x0 + w + 1}" y="${base + 3}" font-size="8" fill="${color}">&#9760;</text>`;
+    } else if (index < 15) {
+      s += `<g transform="translate(${x0 + w - 4},${base - 7}) scale(0.85)">`
+        + `<path d="M5,8.5 C2,6 0,4.4 0,2.8 C0,1.2 1.2,0 2.6,0 C3.8,0 4.6,0.7 5,1.5 `
+        + `C5.4,0.7 6.2,0 7.4,0 C8.8,0 10,1.2 10,2.8 C10,4.4 8,6 5,8.5 Z" fill="#f778ba">`
+        + `<animate attributeName="opacity" values="1;0.5;1" dur="1.2s" repeatCount="indefinite"/>`
+        + `</path></g>`;
+    } else {
+      s += `<circle cx="${x0 + w}" cy="${base}" r="1.6" fill="${p.dim}"/>`;
+    }
+    return s;
+  }
+
+  // The mascot: a little skull buddy whose face mirrors the reading.
+  // happy = halo + blush + ^^ eyes · ok = dot eyes · sad = frown · dead = x_x + crack
+  function skullBuddy(index, p) {
+    const sx = 450, sy = 42;
+    const face = index < 15 ? 'happy' : index < 60 ? 'ok' : index < 80 ? 'sad' : 'dead';
+    let s = '';
+    if (face === 'happy')
+      s += `<ellipse cx="${sx}" cy="${sy - 16}" rx="6" ry="2" fill="none" stroke="#ffd866" stroke-width="1.4"/>`;
+    s += `<path d="M ${sx - 10.5},${sy + 3} A 10.5 10.5 0 1 1 ${sx + 10.5},${sy + 3} `
+      + `L ${sx + 10.5},${sy + 6} Q ${sx + 10.5},${sy + 10.5} ${sx + 6.5},${sy + 10.5} `
+      + `L ${sx - 6.5},${sy + 10.5} Q ${sx - 10.5},${sy + 10.5} ${sx - 10.5},${sy + 6} Z" fill="#e8e6df"/>`;
+    s += `<path d="M ${sx - 3.5},${sy + 10.5} v -3 M ${sx},${sy + 10.5} v -3 M ${sx + 3.5},${sy + 10.5} v -3" stroke="${p.bg}" stroke-width="1"/>`;
+    const eye = (ex) => {
+      const ey = sy - 0.5;
+      if (face === 'happy')
+        return `<path d="M ${ex - 2.4},${ey + 1} Q ${ex},${ey - 2.2} ${ex + 2.4},${ey + 1}" stroke="${p.bg}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+      if (face === 'dead')
+        return `<path d="M ${ex - 2},${ey - 2} l 4,4 M ${ex + 2},${ey - 2} l -4,4" stroke="${p.bg}" stroke-width="1.3" stroke-linecap="round"/>`;
+      return `<circle cx="${ex}" cy="${ey}" r="2.3" fill="${p.bg}"/>`;
+    };
+    s += eye(sx - 4) + eye(sx + 4);
+    s += `<path d="M ${sx},${sy + 4.5} l -1.4,-2.2 l 2.8,0 Z" fill="${p.bg}"/>`;
+    if (face === 'sad')
+      s += `<path d="M ${sx - 2.5},${sy + 8.4} Q ${sx},${sy + 6.8} ${sx + 2.5},${sy + 8.4}" stroke="${p.bg}" stroke-width="1" fill="none"/>`;
+    if (face === 'happy')
+      s += `<ellipse cx="${sx - 6.8}" cy="${sy + 4}" rx="1.8" ry="1.1" fill="#f778ba" opacity="0.7"/>`
+        + `<ellipse cx="${sx + 6.8}" cy="${sy + 4}" rx="1.8" ry="1.1" fill="#f778ba" opacity="0.7"/>`;
+    if (face === 'dead')
+      s += `<path d="M ${sx - 4},${sy - 8.5} l 3,3.5 l -1.8,2.5" stroke="#9a978c" stroke-width="0.9" fill="none"/>`;
+    return `<g>${s}</g>`;
+  }
+
+  // Tiny graveyard under the gauge — a stone per corpse (half-size for
+  // stillborn, the baby graves). All alive? Flowers grow instead.
+  function graveyard(reading, p) {
+    const gy = 180;
+    let s = `<line x1="24" y1="${gy}" x2="166" y2="${gy}" stroke="${p.border}" stroke-width="1"/>`;
+    const dead = reading.entries
+      .filter((e) => e.fate !== 0)
+      .sort((a, b) => (b.stillborn - a.stillborn) || b.daysIdle - a.daysIdle);
+    if (!dead.length) {
+      for (let i = 0; i < 3; i++) {
+        const fx = 42 + i * 30;
+        s += `<line x1="${fx}" y1="${gy}" x2="${fx}" y2="${gy - 7}" stroke="#3fb950" stroke-width="1.2"/>`;
+        for (let k = 0; k < 5; k++) {
+          const [px, py] = pt(fx, gy - 9.5, 2.4, k * 72 + 90);
+          s += `<circle cx="${f1(px)}" cy="${f1(py)}" r="1.7" fill="${i % 2 ? '#f778ba' : '#ffd866'}"/>`;
+        }
+        s += `<circle cx="${fx}" cy="${gy - 9.5}" r="1.4" fill="#e6edf3"/>`;
+      }
+      return `<g>${s}</g>`;
+    }
+    const show = dead.slice(0, 6);
+    show.forEach((e, i) => {
+      const w = e.stillborn ? 8 : 12, h = e.stillborn ? 7 : 11;
+      const x = 28 + i * 22, top = gy - h;
+      s += `<path d="M ${x},${gy} L ${x},${top + w / 2} A ${w / 2} ${w / 2} 0 0 1 ${x + w},${top + w / 2} L ${x + w},${gy} Z" fill="#565c66"/>`;
+      s += `<path d="M ${x + w / 2 - 1.8},${top + w / 2 + 1.2} h 3.6 M ${x + w / 2},${top + w / 2 - 0.6} v 3.6" stroke="${p.bg}" stroke-width="0.9"/>`;
+    });
+    if (dead.length > 6)
+      s += `<text x="${28 + 6 * 22 - 6}" y="${gy - 2}" font-size="8" fill="${p.dim}">+${dead.length - 6}</text>`;
+    return `<g>${s}</g>`;
   }
 
   // ---------- lifelines chart ----------
@@ -373,7 +454,10 @@
     if (index >= 80) {
       return '<polyline points="60,75 72,95 66,110 80,128" stroke="#3a3f45" stroke-width="1.5" fill="none"/>'
         + '<polyline points="120,70 112,92 124,105 115,126" stroke="#3a3f45" stroke-width="1.2" fill="none"/>'
-        + '<path d="M 470,10 Q 480,20 488,12 M 470,10 Q 478,28 470,36 M 470,10 L 488,36 M 470,10 A 24 24 0 0 1 488,36" stroke="#3a3f45" stroke-width="1" fill="none"/>';
+        + '<path d="M 470,10 Q 480,20 488,12 M 470,10 Q 478,28 470,36 M 470,10 L 488,36 M 470,10 A 24 24 0 0 1 488,36" stroke="#3a3f45" stroke-width="1" fill="none"/>'
+        + '<line x1="479" y1="24" x2="479" y2="40" stroke="#4a5058" stroke-width="0.8"/>'
+        + '<circle cx="479" cy="42" r="2.2" fill="#4a5058"/>'
+        + '<path d="M 477,41 l -2.5,-2 M 477,43 l -2.5,2 M 481,41 l 2.5,-2 M 481,43 l 2.5,2" stroke="#4a5058" stroke-width="0.8" fill="none"/>';
     }
     return '';
   }
@@ -384,6 +468,8 @@
       + `<rect width="${W}" height="${H}" rx="6" fill="${p.bg}" stroke="${p.border}" stroke-width="1"/>`
       + gauge(reading.index, p)
       + stats(reading, p)
+      + graveyard(reading, p)
+      + skullBuddy(reading.index, p)
       + easterEgg(reading.index)
       + `<text x="${W - 10}" y="${H - 8}" text-anchor="end" font-size="10" fill="${p.dim}">necrometer.dev</text>`
       + '</svg>';
