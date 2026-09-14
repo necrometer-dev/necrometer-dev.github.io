@@ -13,7 +13,7 @@
     "title": "Repo Necromancer",
     "corpses": 78,
     "total": 78,
-    "starsStranded": 37006
+    "starsStranded": 37005
   },
   {
     "name": "tj",
@@ -21,7 +21,7 @@
     "title": "Repo Necromancer",
     "corpses": 215,
     "total": 219,
-    "starsStranded": 72603
+    "starsStranded": 72597
   },
   {
     "name": "mitchellh",
@@ -29,7 +29,7 @@
     "title": "Repo Necromancer",
     "corpses": 102,
     "total": 106,
-    "starsStranded": 37507
+    "starsStranded": 37508
   },
   {
     "name": "kripken",
@@ -45,7 +45,7 @@
     "title": "Repo Necromancer",
     "corpses": 60,
     "total": 61,
-    "starsStranded": 45466
+    "starsStranded": 45465
   },
   {
     "name": "ssloy",
@@ -53,7 +53,7 @@
     "title": "Repo Necromancer",
     "corpses": 42,
     "total": 42,
-    "starsStranded": 35769
+    "starsStranded": 35777
   },
   {
     "name": "jashkenas",
@@ -69,7 +69,7 @@
     "title": "Repo Necromancer",
     "corpses": 60,
     "total": 63,
-    "starsStranded": 113977
+    "starsStranded": 113982
   },
   {
     "name": "google",
@@ -77,7 +77,7 @@
     "title": "Repo Necromancer",
     "corpses": 884,
     "total": 984,
-    "starsStranded": 714169
+    "starsStranded": 714177
   },
   {
     "name": "antirez",
@@ -85,7 +85,7 @@
     "title": "Repo Necromancer",
     "corpses": 100,
     "total": 102,
-    "starsStranded": 64204
+    "starsStranded": 64216
   },
   {
     "name": "sindresorhus",
@@ -93,23 +93,23 @@
     "title": "Repo Necromancer",
     "corpses": 955,
     "total": 992,
-    "starsStranded": 378151
+    "starsStranded": 378160
   },
   {
     "name": "microsoft",
     "index": 79,
     "title": "Graveyard Keeper",
-    "corpses": 786,
+    "corpses": 789,
     "total": 952,
-    "starsStranded": 293762
+    "starsStranded": 301033
   },
   {
     "name": "angular",
     "index": 75,
     "title": "Graveyard Keeper",
-    "corpses": 158,
+    "corpses": 159,
     "total": 209,
-    "starsStranded": 144420
+    "starsStranded": 144636
   },
   {
     "name": "fabpot",
@@ -125,7 +125,7 @@
     "title": "Serial Starter",
     "corpses": 7,
     "total": 9,
-    "starsStranded": 9580
+    "starsStranded": 9575
   },
   {
     "name": "spring-projects",
@@ -141,22 +141,22 @@
     "title": "Healthy Churn",
     "corpses": 69,
     "total": 157,
-    "starsStranded": 119384
-  },
-  {
-    "name": "studio2201",
-    "index": 20,
-    "title": "Healthy Churn",
-    "corpses": 3,
-    "total": 5,
-    "starsStranded": 0
+    "starsStranded": 119385
   },
   {
     "name": "UberMetroid",
-    "index": 13,
+    "index": 11,
+    "title": "The Maintainer",
+    "corpses": 1,
+    "total": 3,
+    "starsStranded": 0
+  },
+  {
+    "name": "studio2201",
+    "index": 9,
     "title": "The Maintainer",
     "corpses": 2,
-    "total": 5,
+    "total": 7,
     "starsStranded": 0
   },
   {
@@ -180,15 +180,15 @@
     "index": 0,
     "title": "Insufficient Corpses",
     "corpses": 0,
-    "total": 1,
+    "total": 2,
     "starsStranded": 0
   },
   {
     "name": "necrometer-dev",
     "index": 0,
-    "title": "Insufficient Corpses",
+    "title": "The Maintainer",
     "corpses": 0,
-    "total": 2,
+    "total": 4,
     "starsStranded": 0
   }
 ]
