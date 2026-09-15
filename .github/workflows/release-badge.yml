@@ -1,9 +1,9 @@
 name: release-badge
 
-# Watch the necrometer repo for new releases. When one ships, update
-# index.html's footer badge with the live tag so visitors see the
-# current version on first paint — even if their browser blocks the
-# GitHub API or is rate-limited.
+# Watch the Seance engine repo for new releases. When one ships,
+# update index.html's footer badge with the live tag so visitors see
+# the current version on first paint — even if their browser blocks
+# the GitHub API or is rate-limited.
 
 on:
   repository_dispatch:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'tag to bake in (e.g. v0.4.1)'
+        description: 'tag to bake in (e.g. v0.4.2)'
         required: true
       url:
         description: 'release html_url'
@@ -52,31 +52,10 @@ jobs:
           echo "latest = $TAG -> $URL"
       - name: update footer badge
         if: steps.rel.outputs.tag != ''
-        run: |
-          set -euo pipefail
-          TAG="${{ steps.rel.outputs.tag }}"
-          URL="${{ steps.rel.outputs.url }}"
-          # Normalise "v0.4.1" -> "0.4.1" for display.
-          DISPLAY="engine ${TAG#v}"
-          # Escape any / or & in URL for sed.
-          ESC_URL=$(printf '%s' "$URL" | sed 's/[&/\]/\\&/g')
-          python3 - "$TAG" "$DISPLAY" "$URL" <<'PY'
-import re, sys, pathlib
-tag, display, url = sys.argv[1:4]
-p = pathlib.Path("index.html")
-src = p.read_text()
-new = re.sub(
-    r'<a class="fright" id="rel"[^>]*>[^<]*</a>',
-    f'<a class="fright" id="rel" href="{url}">{display}</a>',
-    src,
-)
-if new == src:
-    print("badge already up to date — no change")
-    p.write_text(new)
-    sys.exit(0)
-p.write_text(new)
-print(f"updated badge: {display} -> {url}")
-PY
+        env:
+          TAG: ${{ steps.rel.outputs.tag }}
+          URL: ${{ steps.rel.outputs.url }}
+        run: python3 .github/workflows/release-badge.py
       - name: commit
         run: |
           set -euo pipefail

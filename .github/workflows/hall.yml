@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
-      # Single source of truth: bump Cargo.toml in necrometer and update this.
-      NECRO_VERSION: v0.4.1
+      # Single source of truth: bump Cargo.toml in seance and update this.
+      NECRO_VERSION: v0.4.2
     steps:
       - uses: actions/checkout@v4
       - name: summon the necrometer
@@ -21,13 +21,13 @@ jobs:
           cd /tmp
           REL="https://github.com/necrometer-dev/necrometer/releases/download/${NECRO_VERSION}"
           curl --fail --proto '=https' --tlsv1.2 --silent --show-error --location \
-            --output necrometer-x86_64-unknown-linux-musl.tar.gz \
-            "${REL}/necrometer-x86_64-unknown-linux-musl.tar.gz"
+            --output seance-x86_64-unknown-linux-musl.tar.gz \
+            "${REL}/seance-x86_64-unknown-linux-musl.tar.gz"
           curl --fail --proto '=https' --tlsv1.2 --silent --show-error --location \
             --output SHA256SUMS "${REL}/SHA256SUMS"
           sha256sum --strict --check SHA256SUMS
-          tar --extract --gzip --file necrometer-x86_64-unknown-linux-musl.tar.gz
-      - run: /tmp/necrometer hall hall.txt hall.json
+          tar --extract --gzip --file seance-x86_64-unknown-linux-musl.tar.gz
+      - run: /tmp/seance hall hall.txt hall.json
       - run: |
           set -euo pipefail
           git config user.name "necrometer[bot]"

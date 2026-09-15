@@ -1,5 +1,5 @@
-/* @ts-self-types="./necrometer.d.ts" */
-import * as import1 from "./snippets/necrometer-d58b23584fedf266/inline0.js"
+/* @ts-self-types="./seance.d.ts" */
+import * as import1 from "./snippets/seance-854c443d04d54ffd/inline0.js"
 
 
 /**
@@ -60,8 +60,8 @@ function __wbg_get_imports() {
     };
     return {
         __proto__: null,
-        "./necrometer_bg.js": import0,
-        "./snippets/necrometer-d58b23584fedf266/inline0.js": import1,
+        "./seance_bg.js": import0,
+        "./snippets/seance-854c443d04d54ffd/inline0.js": import1,
     };
 }
 
@@ -233,7 +233,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('necrometer_bg.wasm', import.meta.url);
+        module_or_path = new URL('seance_bg.wasm', import.meta.url);
     }
     const imports = __wbg_get_imports();
 
