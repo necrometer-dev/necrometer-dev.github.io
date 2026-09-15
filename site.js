@@ -76,25 +76,66 @@ function startRites() {
 }
 function stopRites() { clearInterval(riteTimer); riteTimer = null; }
 
+const TOKEN_KEY = 'necrometer.token';
+const CACHE_MS = 30 * 60 * 1000;
+function token() {
+  const el = $('token');
+  const typed = el && el.value.trim();
+  if (typed) return typed;
+  try { return sessionStorage.getItem(TOKEN_KEY) || null; } catch (_) { return null; }
+}
+function rememberToken() {
+  const el = $('token');
+  if (!el) return;
+  const v = el.value.trim();
+  try {
+    if (v) sessionStorage.setItem(TOKEN_KEY, v);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch (_) { /* private mode */ }
+}
+function cacheKey(name) { return 'necrometer.reading.' + name.toLowerCase(); }
+function cacheGet(name) {
+  try {
+    const o = JSON.parse(sessionStorage.getItem(cacheKey(name)));
+    if (!o || !o.reading || Date.now() - o.t > CACHE_MS) return null;
+    return o.reading;
+  } catch (_) { return null; }
+}
+function cachePut(name, reading) {
+  try { sessionStorage.setItem(cacheKey(name), JSON.stringify({ t: Date.now(), reading })); }
+  catch (_) { /* quota */ }
+}
+
 async function run(name) {
   name = name.trim().replace(/^@/, '');
   if (!name) return;
   $('result').style.display = 'none';
+  const tok = token();
+  const hit = cacheGet(name);
+  if (hit) {
+    current = { r: hit, svg: Engine.renderCard(hit) };
+    show(hit);
+    status('cached reading — GitHub not contacted');
+    history.replaceState(null, '', '?u=' + encodeURIComponent(name));
+    return;
+  }
   startRites();
   try {
-    // Detect user vs org up front so the metrics engine picks the
-    // right title/flavor ("Healthy Churn" for orgs at low index, vs
-    // "The Maintainer" for individuals) and so the right /repos path
-    // is taken (orgs can't use /users/{n}/repos at scale).
-    const resolved = await Necrometer.detectKind(name, null);
-    const { kind, repos } = await Necrometer.fetchRepos(name, resolved, (n) => { dug += n; });
+    const resolved = await Necrometer.detectKind(name, tok);
+    const { kind, repos } = await Necrometer.fetchRepos(name, resolved, (n) => { dug += n; }, tok);
     const r = Engine.analyze(name, kind, repos);
     current = { r, svg: Engine.renderCard(r) };
+    cachePut(name, r);
     show(r);
     status('');
     history.replaceState(null, '', '?u=' + encodeURIComponent(name));
   } catch (e) {
-    status(e.message || String(e), true);
+    const msg = e.message || String(e);
+    status(msg, true);
+    if (/rate limit|API calls/i.test(msg)) {
+      const box = $('token-box');
+      if (box) box.open = true;
+    }
   } finally {
     stopRites();
   }
@@ -122,7 +163,14 @@ function show(r) {
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-$('f').addEventListener('submit', (e) => { e.preventDefault(); run($('subject').value); });
+$('f').addEventListener('submit', (e) => { e.preventDefault(); rememberToken(); run($('subject').value); });
+if ($('token')) {
+  try {
+    const saved = sessionStorage.getItem(TOKEN_KEY);
+    if (saved) { $('token').value = saved; $('token-box').open = true; }
+  } catch (_) { /* private mode */ }
+  $('token').addEventListener('change', rememberToken);
+}
 const copier = (el) => () => navigator.clipboard.writeText(el.textContent).then(() => status('copied — go carve it'));
 $('copy').addEventListener('click', copier($('snippet')));
 $('copywf').addEventListener('click', copier($('workflow')));
@@ -200,19 +248,7 @@ fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) =
   $('ticker').style.display = 'block';
 }).catch(() => { /* the tape stays hidden */ });
 
-// Latest release badge (footer bottom-right). Silent on any failure
-// so a rate-limit or GH hiccup never blocks the page.
-const REL = document.getElementById('rel');
-if (REL) {
-  fetch('https://api.github.com/repos/necrometer-dev/necrometer/releases/latest',
-       { headers: { 'Accept': 'application/vnd.github+json' } })
-    .then(r => r.ok ? r.json() : null)
-    .then(j => {
-      if (!j || !j.tag_name) return;
-      REL.textContent = 'seance ' + j.tag_name.replace(/^v/, '');
-      REL.href = j.html_url || REL.href;
-      REL.hidden = false;
-    })
-    .catch(() => { /* leave the badge hidden */ });
-}
+// Footer badge is baked into index.html (release-badge.yml). Do not
+// fetch api.github.com/releases/latest here — that spends the same
+// 60/hr anonymous quota as a username search.
 })();

@@ -76,11 +76,19 @@ async function runOnce(chromium, origin, pass) {
   });
   await page.route("https://api.github.com/**", async (route) => {
     const url = route.request().url();
+    if (url.includes("/rate_limit")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ resources: { core: { remaining: 60, reset: Math.floor(Date.now() / 1000) + 3600 } } }),
+      });
+      return;
+    }
     if (/\/users\/[^/]+$/.test(new URL(url).pathname)) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ login: "ci-user", type: "User" }),
+        body: JSON.stringify({ login: "ci-user", type: "User", public_repos: 1 }),
       });
       return;
     }

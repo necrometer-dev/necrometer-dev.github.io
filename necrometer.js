@@ -4,8 +4,9 @@
  *   2. hands them to the wasm `analyze_repos`, and
  *   3. hands the resulting reading to `render_card`.
  *
- * Both the browser (window.Necrometer) and node CLI use the same API.
- * No framework, no build step. CSP-safe (no eval, no inline scripts).
+ * Anonymous GitHub is 60 req/hr. Google is ~30 pages by itself.
+ * We peek /rate_limit (doesn't count), refuse if we can't finish,
+ * and page in batches no larger than remaining.
  */
 (function (root, factory) {
   const api = factory();
@@ -15,18 +16,13 @@
   'use strict';
 
   const API = 'https://api.github.com';
+  const MAX_PAGES = 30;
 
   class NotFound extends Error {}
   class Upstream extends Error {}
 
   const enc = encodeURIComponent;
 
-  // GitHub returns a fat object per repo (~5KB including topics,
-  // permissions, license, default_branch, watchers…). We only need 7
-  // fields. Projecting them in JS keeps the wasm-boundary JSON tiny,
-  // which matters for big orgs (Google has 2,900 repos → ~15MB raw).
-  // Shape stays an object (not a tuple) so the Rust parser in wasm
-  // doesn't need to change.
   const KEEP_REPO = (r) => ({
     name: r.name,
     pushed_at: r.pushed_at || null,
@@ -37,37 +33,84 @@
     html_url: r.html_url || '',
   });
 
-  // Kind comes from GET /users/{n} `type`, not from which list endpoint
-  // happens to 200 (`/users/{org}/repos` 200s for orgs too).
   function kindFromUserPayload(j) {
     return j && j.type === 'Organization' ? 'org' : 'user';
+  }
+
+  function pagesNeeded(publicRepos) {
+    const n = Number(publicRepos) || 0;
+    if (n <= 0) return 1;
+    return Math.min(MAX_PAGES, Math.ceil(n / 100));
+  }
+
+  function waitMinutes(resetUnix) {
+    const reset = Number(resetUnix);
+    if (!reset) return null;
+    const ms = reset * 1000 - Date.now();
+    if (ms <= 0 || ms > 3600e3) return null;
+    return Math.max(1, Math.ceil(ms / 60000));
+  }
+
+  function limitMessage(resetUnix) {
+    const m = waitMinutes(resetUnix);
+    return m ? 'GitHub rate limit — try again in ' + m + 'm' : 'GitHub rate limit hit';
+  }
+
+  function quotaMessage(name, publicRepos, remaining, resetUnix) {
+    const pages = pagesNeeded(publicRepos);
+    const m = waitMinutes(resetUnix);
+    const wait = m ? ' (resets in ' + m + 'm)' : '';
+    return name + ' has ~' + publicRepos + ' public repos (~' + pages +
+      ' GitHub API calls). Anonymous quota has ' + remaining + ' left this hour' +
+      wait + '. Paste a token (public repo read, 5000/hr) or try a smaller subject.';
+  }
+
+  function cannotAfford(remaining, pages) {
+    if (remaining == null || remaining < 0) return false;
+    return remaining < pages + 1;
+  }
+
+  function throwIfLimited(resp) {
+    if (resp.status !== 403 && resp.status !== 429) return;
+    throw new Upstream(limitMessage(resp.headers.get('x-ratelimit-reset')));
+  }
+
+  function remainingOf(resp) {
+    const v = resp.headers.get('x-ratelimit-remaining');
+    return v == null ? null : Number(v);
+  }
+
+  async function peekQuota(token) {
+    const headers = { Accept: 'application/vnd.github+json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
+    try {
+      const r = await fetch(API + '/rate_limit', { headers });
+      if (!r.ok) return { remaining: null, reset: null };
+      const j = await r.json();
+      const core = (j.resources && j.resources.core) || {};
+      return {
+        remaining: typeof core.remaining === 'number' ? core.remaining : null,
+        reset: core.reset || null,
+      };
+    } catch (_) {
+      return { remaining: null, reset: null };
+    }
   }
 
   async function detectKind(name, token) {
     const headers = { Accept: 'application/vnd.github+json' };
     if (token) headers.Authorization = 'Bearer ' + token;
 
-    const probe = async (url) => {
-      const r = await fetch(url, { headers });
-      if (r.status === 403 || r.status === 429) {
-        const reset = r.headers.get('x-ratelimit-reset');
-        const wait = reset ? Math.max(0, reset * 1000 - Date.now()) : null;
-        throw new Upstream(wait && wait < 3600e3
-          ? 'GitHub rate limit — try again in ' + Math.ceil(wait / 60000) + 'm'
-          : 'GitHub rate limit hit');
-      }
-      return r;
-    };
-
     const user = API + '/users/' + enc(name);
-    const r1 = await probe(user);
+    const r1 = await fetch(user, { headers });
+    throwIfLimited(r1);
     if (r1.status === 200) {
       const j = await r1.json();
       const kind = kindFromUserPayload(j);
       const endpoint = kind === 'org'
         ? API + '/orgs/' + enc(name) + (token ? '/repos?type=all' : '/repos')
         : API + '/users/' + enc(name) + '/repos';
-      return { kind, endpoint };
+      return { kind, endpoint, publicRepos: j.public_repos || 0, remaining: remainingOf(r1) };
     }
     if (r1.status !== 404 && r1.status !== 422) {
       throw new Upstream('GitHub: HTTP ' + r1.status);
@@ -75,59 +118,66 @@
 
     const orgRepos = API + '/orgs/' + enc(name) +
       (token ? '/repos?type=all' : '/repos');
-    const r2 = await probe(orgRepos + (orgRepos.includes('?') ? '&' : '?') + 'per_page=1');
-    if (r2.status === 200) return { kind: 'org', endpoint: orgRepos };
+    const r2 = await fetch(orgRepos + (orgRepos.includes('?') ? '&' : '?') + 'per_page=1', { headers });
+    throwIfLimited(r2);
+    if (r2.status === 200) return { kind: 'org', endpoint: orgRepos, publicRepos: 0, remaining: remainingOf(r2) };
     if (r2.status === 404) throw new NotFound('no such user or org: ' + name);
     throw new Upstream('GitHub: HTTP ' + r2.status);
   }
 
-  // Fetch repos for a name. `resolved` is the {kind, endpoint} returned
-  // by detectKind — endpoint is the URL to page through. In the common
-  // case we've already used per_page=1 to confirm it works, so we just
-  // continue from there.
   async function fetchRepos(name, resolved, onPage, token) {
     const headers = { Accept: 'application/vnd.github+json' };
     if (token) headers.Authorization = 'Bearer ' + token;
-    const { kind, endpoint } = resolved;
-    const base = endpoint;
-    const sep = base.includes('?') ? '&' : '?';
+    const { kind, endpoint, publicRepos } = resolved;
+    const sep = endpoint.includes('?') ? '&' : '?';
+
+    let remaining = resolved.remaining;
+    if (remaining == null) {
+      const q = await peekQuota(token);
+      remaining = q.remaining;
+    }
+    const pages = pagesNeeded(publicRepos);
+    if (!token && cannotAfford(remaining, pages) && publicRepos > 100) {
+      const q = await peekQuota(token);
+      throw new Upstream(quotaMessage(name, publicRepos, q.remaining != null ? q.remaining : remaining, q.reset));
+    }
 
     async function get(page) {
-      const resp = await fetch(base + sep + 'per_page=100&page=' + page, { headers });
+      const resp = await fetch(endpoint + sep + 'per_page=100&page=' + page, { headers });
       if (resp.status === 404) throw new NotFound('no such user or org: ' + name);
-      if (resp.status === 403 || resp.status === 429) {
-        const reset = resp.headers.get('x-ratelimit-reset');
-        const wait = reset ? Math.max(0, reset * 1000 - Date.now()) : null;
-        throw new Upstream(wait && wait < 3600e3
-          ? 'GitHub rate limit — try again in ' + Math.ceil(wait / 60000) + 'm'
-          : 'GitHub rate limit hit');
-      }
+      throwIfLimited(resp);
       if (!resp.ok) throw new Upstream('GitHub: HTTP ' + resp.status);
+      remaining = remainingOf(resp);
       const rows = await resp.json();
-      if (onPage) onPage(rows.length, resp.headers.get('x-ratelimit-remaining'));
+      if (onPage) onPage(rows.length, remaining);
       return rows;
     }
 
-    const MAX = 30;            // 30 × 100 = 3000 repos, covers current top orgs
     const first = await get(1);
     const out = [];
     for (const r of first) out.push(KEEP_REPO(r));
     if (first.length < 100) return { kind, endpoint, repos: out };
 
-    // Paged in parallel batches of 4 to stay under the anonymous
-    // 60/hr quota while not being unnecessarily slow.
-    for (let i = 2; i <= MAX; i += 4) {
-      const idxs = [i, i + 1, i + 2, i + 3].filter(p => p <= MAX);
-      const pages = await Promise.all(idxs.map(get));
+    // Parallel burns the 60/hr cap in bursts. Batch size follows remaining.
+    for (let i = 2; i <= MAX_PAGES; ) {
+      const left = remaining == null ? 4 : Math.max(1, Math.min(4, remaining - 1));
+      const idxs = [];
+      for (let k = 0; k < left && i + k <= MAX_PAGES; k++) idxs.push(i + k);
+      const batch = await Promise.all(idxs.map(get));
       let short = false;
-      for (const rows of pages) {
+      for (const rows of batch) {
         for (const r of rows) out.push(KEEP_REPO(r));
         if (rows.length < 100) short = true;
       }
       if (short) break;
+      i += idxs.length;
     }
     return { kind, endpoint, repos: out };
   }
 
-  return { fetchRepos, detectKind, kindFromUserPayload, KEEP_REPO, NotFound, Upstream };
+  return {
+    fetchRepos, detectKind, kindFromUserPayload, KEEP_REPO,
+    pagesNeeded, cannotAfford, quotaMessage, limitMessage, peekQuota,
+    NotFound, Upstream,
+  };
 });

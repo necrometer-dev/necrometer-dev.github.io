@@ -107,6 +107,9 @@ td { padding:6px 8px; border-bottom:1px solid #1e1830 }
   font-size:14px; display:flex; align-items:center; justify-content:center; color:var(--violet) }
 details { margin-top:26px; border:1px solid var(--border); border-radius:6px; padding:12px 16px; background:var(--panel) }
 summary { cursor:pointer; color:var(--bone) }
+details.ward { margin:8px 0 0; border:0; background:transparent; padding:0 }
+details.ward summary { color:var(--dim); font-size:15px }
+details.ward input { margin-top:8px; width:min(420px,100%) }
 .row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 }
 .card-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:12px 0 20px; flex-wrap:wrap }
 .card-bar #summary { margin:0; flex:1; min-width:200px }
@@ -166,6 +169,10 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
     <input id="subject" placeholder="whose soul shall we weigh?" autofocus autocomplete="off">
     <button type="submit">exhume</button>
   </form>
+  <details class="ward" id="token-box">
+    <summary>anonymous GitHub cap is 60 calls/hour — paste a token to exhume google-sized orgs</summary>
+    <input id="token" type="password" placeholder="ghp_… public repo read is enough" autocomplete="off" spellcheck="false">
+  </details>
   <div id="status"></div>
 
   <section id="result">
