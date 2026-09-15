@@ -37,38 +37,58 @@
     html_url: r.html_url || '',
   });
 
-  // Detect whether `name` is a user or an org. Hits `/users/{n}` and
-  // `/orgs/{n}` in parallel; the org response wins if 200. If both
-  // 404, throw NotFound.
+  // Resolve kind (user vs org) for `name`. To save rate-limit budget
+  // (anonymous visitors share a 60/hr quota) we make at most one
+  // discovery call in the common case: try `/users/{n}/repos` first,
+  // since GitHub routes both users and orgs through it. Only when
+  // that 404s do we fall back to `/orgs/{n}/repos`. We also surface
+  // 403/429 from the discovery call as `Upstream` so the UI shows
+  // the real reason ("rate limited") instead of "no such user".
   async function detectKind(name, token) {
     const headers = { Accept: 'application/vnd.github+json' };
     if (token) headers.Authorization = 'Bearer ' + token;
-    const [u, o] = await Promise.all([
-      fetch(API + '/users/' + enc(name), { headers }).then(r => r.status),
-      fetch(API + '/orgs/' + enc(name), { headers }).then(r => r.status),
-    ]);
-    if (o === 200) return 'org';
-    if (u === 200) return 'user';
-    throw new NotFound('no such user or org: ' + name);
+    const userRepos = API + '/users/' + enc(name) + '/repos';
+
+    const probe = async (url) => {
+      const r = await fetch(url + '?per_page=1', { headers });
+      if (r.status === 403 || r.status === 429) {
+        const reset = r.headers.get('x-ratelimit-reset');
+        const wait = reset ? Math.max(0, reset * 1000 - Date.now()) : null;
+        throw new Upstream(wait && wait < 3600e3
+          ? 'GitHub rate limit — try again in ' + Math.ceil(wait / 60000) + 'm'
+          : 'GitHub rate limit hit');
+      }
+      return r;
+    };
+
+    // Most accounts (users and orgs alike) come back through /users.
+    // 404 means "definitely not a user" — try /orgs. 422 means "looks
+    // like an org, /users rejects you" — also try /orgs. Anything
+    // else is real upstream trouble; surface verbatim.
+    const r1 = await probe(userRepos);
+    if (r1.status === 200) return { kind: 'user', endpoint: userRepos };
+    if (r1.status !== 404 && r1.status !== 422) {
+      throw new Upstream('GitHub: HTTP ' + r1.status);
+    }
+
+    // /users rejected; try /orgs.
+    const orgRepos = API + '/orgs/' + enc(name) +
+      (token ? '/repos?type=all' : '/repos');
+    const r2 = await probe(orgRepos);
+    if (r2.status === 200) return { kind: 'org', endpoint: orgRepos };
+    if (r2.status === 404) throw new NotFound('no such user or org: ' + name);
+    throw new Upstream('GitHub: HTTP ' + r2.status);
   }
 
-  // Resolve the right repos endpoint.
-  //   - anonymous: orgs → /orgs/{n}/repos, users → /users/{n}/repos
-  //   - with token: orgs → /orgs/{n}/repos?type=all (so private repos the
-  //     token can see show up); user → /users/{n}/repos
-  function repoEndpoint(name, kind, token) {
-    if (kind === 'org')
-      return API + '/orgs/' + enc(name) + (token ? '/repos?type=all' : '/repos');
-    return API + '/users/' + enc(name) + '/repos';
-  }
-
-  // Fetch up to MAX_PAGES × 100 = 3000 repos. Returns the projected
-  // 7-tuples (not the raw objects) so the caller hands ~1/30th the
-  // bytes to wasm.
-  async function fetchRepos(name, kind, onPage, token) {
+  // Fetch repos for a name. `resolved` is the {kind, endpoint} returned
+  // by detectKind — endpoint is the URL to page through. In the common
+  // case we've already used per_page=1 to confirm it works, so we just
+  // continue from there.
+  async function fetchRepos(name, resolved, onPage, token) {
     const headers = { Accept: 'application/vnd.github+json' };
     if (token) headers.Authorization = 'Bearer ' + token;
-    const base = repoEndpoint(name, kind, token);
+    const { kind, endpoint } = resolved;
+    const base = endpoint;
     const sep = base.includes('?') ? '&' : '?';
 
     async function get(page) {
@@ -91,7 +111,7 @@
     const first = await get(1);
     const out = [];
     for (const r of first) out.push(KEEP_REPO(r));
-    if (first.length < 100) return { kind, repos: out };
+    if (first.length < 100) return { kind, endpoint, repos: out };
 
     // Paged in parallel batches of 4 to stay under the anonymous
     // 60/hr quota while not being unnecessarily slow.
@@ -105,7 +125,7 @@
       }
       if (short) break;
     }
-    return { kind, repos: out };
+    return { kind, endpoint, repos: out };
   }
 
   return { fetchRepos, detectKind, KEEP_REPO, NotFound, Upstream };
@@ -122,13 +142,13 @@ if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.m
   }
   (async () => {
     const token = process.env.NECRO_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-    const kind = await detectKind(name, token);
+    const resolved = await detectKind(name, token);
     const wasm = require('./pkg/seance.js');
     const fs = require('fs');
     const wasmBytes = fs.readFileSync('./pkg/seance_bg.wasm');
     if (typeof wasm.initSync === 'function') wasm.initSync({ module: wasmBytes });
     else await wasm.default(wasmBytes);
-    const { repos } = await fetchRepos(name, kind, null, token);
+    const { kind, repos } = await fetchRepos(name, resolved, null, token);
     const reading = wasm.analyze_repos(name, kind, JSON.stringify(repos));
     const svg = wasm.render_card(reading);
     process.stdout.write(svg);

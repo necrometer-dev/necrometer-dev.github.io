@@ -81,8 +81,8 @@ async function run(name) {
     // right title/flavor ("Healthy Churn" for orgs at low index, vs
     // "The Maintainer" for individuals) and so the right /repos path
     // is taken (orgs can't use /users/{n}/repos at scale).
-    const kind = await Necrometer.detectKind(name, null);
-    const { repos } = await Necrometer.fetchRepos(name, kind, (n) => { dug += n; });
+    const resolved = await Necrometer.detectKind(name, null);
+    const { kind, repos } = await Necrometer.fetchRepos(name, resolved, (n) => { dug += n; });
     const r = Engine.analyze(name, kind, repos);
     current = { r, svg: Engine.renderCard(r) };
     show(r);
