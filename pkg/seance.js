@@ -1,5 +1,5 @@
 /* @ts-self-types="./seance.d.ts" */
-import * as import1 from "./snippets/seance-cde660e739ea3338/inline0.js"
+import * as import1 from "./snippets/seance-9a7cca087ec423ae/inline0.js"
 
 
 /**
@@ -64,7 +64,7 @@ function __wbg_get_imports() {
     return {
         __proto__: null,
         "./seance_bg.js": import0,
-        "./snippets/seance-cde660e739ea3338/inline0.js": import1,
+        "./snippets/seance-9a7cca087ec423ae/inline0.js": import1,
     };
 }
 
