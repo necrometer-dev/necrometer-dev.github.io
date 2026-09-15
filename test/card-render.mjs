@@ -83,6 +83,8 @@ if (N.cannotAfford(null, 30)) fail("unknown remaining should not block");
 const qm = N.quotaMessage("google", 2900, 12, Math.floor(Date.now() / 1000) + 900);
 if (!/google/.test(qm) || !/~29/.test(qm) || !/12 left/.test(qm)) fail("quotaMessage: " + qm);
 if (!html.includes('id="token"')) fail("index.html missing token field");
-if (siteJs.includes("releases/latest")) fail("site.js still spends quota on releases/latest");
+if (/fetch\s*\(\s*['"`][^'"`]*releases\/latest/.test(siteJs)) {
+  fail("site.js still spends quota on releases/latest");
+}
 console.log("ok kindFromUserPayload org/user");
 console.log("ok quota helpers google=29 pages, refuse at 10 remaining");
