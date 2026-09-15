@@ -1,7 +1,7 @@
 name: necrometer
 on:
   schedule: [{cron: "17 6 * * *"}]   # daily
-  workflow_dispatch:                  # manual "run now" — also runs on first push
+  workflow_dispatch:                  # manual "run now" (does not fire on push)
 permissions: { contents: write }
 jobs:
   necrometer:

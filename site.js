@@ -30,7 +30,7 @@ try {
 const WORKFLOW = () => `name: necrometer
 on:
   schedule: [{cron: "17 6 * * *"}]   # daily
-  workflow_dispatch:                  # manual "run now" — also runs on first push
+  workflow_dispatch:                  # manual "run now" — does NOT run on push
 permissions: { contents: write }
 jobs:
   necrometer:
@@ -39,25 +39,30 @@ jobs:
       - uses: actions/checkout@v4
       - uses: necrometer-dev/necrometer-action@v1
         with:
-          # GITHUB_TOKEN covers your own private repos. For an org with private
-          # repos you don't own, add a NECRO_TOKEN secret (fine-grained PAT).
+          # GITHUB_TOKEN covers the current repo and the owner's own private
+          # repos. For an org's other private repos, add a NECRO_TOKEN secret
+          # (fine-grained PAT, org-approved).
           token: \${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}`;
 
-const AGENT_RITE = `Add a necrometer card to this repository.
+const AGENT_RITE = `Add a necrometer card to this repository. Follow https://necrometer.dev/agents.md exactly.
 
 1. Create .github/workflows/necrometer.yml with EXACTLY this content:
 
 ${WORKFLOW()}
 
-2. Add this line to README.md, just under the title:
+Do not add a release: input, do not change runs-on, do not set persist-credentials: false.
+
+2. Add this line to the root README.md, near the title (replace OWNER with \`gh repo view --json owner -q .owner.login\`):
 
 [![Necrometer](necrometer.svg)](https://necrometer.dev/?u=OWNER)
 
-Replace OWNER with the repository owner's GitHub login (gh repo view --json owner -q .owner.login).
+3. Commit both files on the default branch and push. workflow_dispatch does NOT run on push — trigger it:
 
-3. Commit both files on the default branch and push, then trigger the workflow once (gh workflow run necrometer, or the Actions tab) so the card appears immediately. It re-carves daily after that.
+gh workflow run necrometer
+gh run watch --exit-status
+git pull
 
-Rules: do NOT create necrometer.svg by hand — the action generates it. The action summons a pinned release binary and SHA256-verifies it before running; do not modify or replace its steps. If the repo needs private-org visibility, add a NECRO_TOKEN secret (fine-grained PAT, repo read). Full rite: https://necrometer.dev/agents.md`;
+Do NOT create necrometer.svg by hand. The action generates and commits it (necrometer[bot]). If checksum verification fails, stop and report it. Full rite: https://necrometer.dev/agents.md`;
 
 const RITES = ['rattling the coffins', 'reading the entrails', 'knocking on repo lids',
   'consulting the void', 'counting the maggots', 'checking for a pulse',
@@ -204,7 +209,7 @@ if (REL) {
     .then(r => r.ok ? r.json() : null)
     .then(j => {
       if (!j || !j.tag_name) return;
-      REL.textContent = 'engine ' + j.tag_name.replace(/^v/, '');
+      REL.textContent = 'seance ' + j.tag_name.replace(/^v/, '');
       REL.href = j.html_url || REL.href;
       REL.hidden = false;
     })
