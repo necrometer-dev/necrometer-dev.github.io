@@ -127,7 +127,12 @@ summary { cursor:pointer; color:var(--bone) }
 #status.err { color:var(--blood) }
 #status:not(:empty)::after { content:' ▌'; animation:blink 1s steps(1) infinite }
 @keyframes blink { 50%{opacity:0} }
-footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px solid var(--border); padding-top:16px }
+footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px solid var(--border); padding-top:16px; display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap }
+footer .fleft { flex:1; min-width:0 }
+footer .fright { color:var(--candle); text-decoration:none; font-family:var(--mono); font-size:13px; padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:rgba(232,179,75,0.06); white-space:nowrap; flex-shrink:0 }
+footer .fright:hover { color:var(--blood); border-color:var(--candle) }
+footer .fright[hidden] { display:none }
+footer .fright::before { content:"⚰ "; opacity:0.7 }
 
 /* spirit wisps */
 .wisp { position:fixed; bottom:-10px; border-radius:50%; background:var(--violet); opacity:0;
@@ -202,9 +207,12 @@ footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px so
   </details>
 
   <footer>
-    necrometer.dev — conjured client-side; your api calls go straight to github.
-    no servers were harmed. they were already dead.<br>
-    source: <a href="https://github.com/necrometer-dev/necrometer-dev.github.io">necrometer-dev</a>
+    <div class="fleft">
+      necrometer.dev — conjured client-side; your api calls go straight to github.
+      no servers were harmed. they were already dead.<br>
+      source: <a href="https://github.com/necrometer-dev/necrometer-dev.github.io">necrometer-dev</a>
+    </div>
+    <a class="fright" id="rel" href="https://github.com/necrometer-dev/necrometer/releases" hidden>latest release…</a>
   </footer>
 </main>
 
@@ -450,6 +458,22 @@ fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) =
   $('tape2').replaceChildren(buildTape());
   $('ticker').style.display = 'block';
 }).catch(() => { /* the tape stays hidden */ });
+
+// Latest release badge (footer bottom-right). Silent on any failure
+// so a rate-limit or GH hiccup never blocks the page.
+const REL = document.getElementById('rel');
+if (REL) {
+  fetch('https://api.github.com/repos/necrometer-dev/necrometer/releases/latest',
+       { headers: { 'Accept': 'application/vnd.github+json' } })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => {
+      if (!j || !j.tag_name) return;
+      REL.textContent = 'engine ' + j.tag_name.replace(/^v/, '');
+      REL.href = j.html_url || REL.href;
+      REL.hidden = false;
+    })
+    .catch(() => { /* leave the badge hidden */ });
+}
 </script>
 </body>
 </html>
