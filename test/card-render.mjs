@@ -32,6 +32,7 @@ for (const f of ["creepster.woff2", "imfell.woff2", "imfell-italic.woff2", "vt32
   const p = path.join(root, "assets/fonts", f);
   if (!fs.existsSync(p)) fail("missing " + p);
 }
+if (!html.includes('src="chrome.js"')) fail("index.html missing chrome.js");
 if (!html.includes('id="card"')) fail("index.html missing #card");
 if (!html.includes('id="result"')) fail("index.html missing #result");
 if (!html.includes('id="f"')) fail("index.html missing form #f");
@@ -88,3 +89,17 @@ if (/fetch\s*\(\s*['"`][^'"`]*releases\/latest/.test(siteJs)) {
 }
 console.log("ok kindFromUserPayload org/user");
 console.log("ok quota helpers google=29 pages, refuse at 10 remaining");
+
+const skip = new Set(["pkg", "hall.json"]);
+function walk(dir) {
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.name === ".git" || skip.has(ent.name)) continue;
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) { walk(p); continue; }
+    if (!/\.(js|mjs|html|yml|yaml|md)$/.test(ent.name)) continue;
+    const n = fs.readFileSync(p, "utf8").split(/\n/).length;
+    if (n > 256) fail("over 256 lines: " + path.relative(root, p) + " (" + n + ")");
+  }
+}
+walk(root);
+console.log("ok authored site files <= 256 lines");

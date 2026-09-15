@@ -61,7 +61,7 @@ jobs:
           set -euo pipefail
           git config user.name "necrometer[bot]"
           git config user.email "bot@necrometer.dev"
-          git pull --rebase --autostash || true
+          git pull --rebase --autostash
           if git diff --quiet -- index.html; then
             echo "no changes — nothing to commit"
             exit 0

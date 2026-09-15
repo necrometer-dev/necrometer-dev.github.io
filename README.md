@@ -38,7 +38,9 @@ Monday with the release binary.
 
 ```
 index.html       the whole page — haunted CRT, fonts, ritual logic
-necrometer.js    JS engine: api fetch + fallback analyze/render
+necrometer.js    GitHub fetch + quota (analysis/render is wasm)
+chrome.js        ticker, copy/share, install-rite text
+site.js          wasm glue + search → #card
 pkg/             wasm build of the Rust engine (generated — don't edit)
 agents.md        the install rite, written for coding agents to fetch
 hall.txt         names for the weekly census

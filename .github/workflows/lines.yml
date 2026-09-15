@@ -1,0 +1,19 @@
+name: lines
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions: { contents: read }
+
+jobs:
+  ceiling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: authored files <= 256 lines
+        run: |
+          set -euo pipefail
+          node test/card-render.mjs
