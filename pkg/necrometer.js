@@ -1,5 +1,5 @@
 /* @ts-self-types="./necrometer.d.ts" */
-import * as import1 from "./snippets/necrometer-e3032fba2c8ea974/inline0.js"
+import * as import1 from "./snippets/necrometer-d58b23584fedf266/inline0.js"
 
 
 /**
@@ -61,7 +61,7 @@ function __wbg_get_imports() {
     return {
         __proto__: null,
         "./necrometer_bg.js": import0,
-        "./snippets/necrometer-e3032fba2c8ea974/inline0.js": import1,
+        "./snippets/necrometer-d58b23584fedf266/inline0.js": import1,
     };
 }
 
