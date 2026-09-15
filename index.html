@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>necrometer — how dead are your repos?</title>
 <meta name="theme-color" content="#0a0812">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
 <meta property="og:title" content="the necrometer">
 <meta property="og:description" content="an instrument for measuring how dead your github repos are">
 <meta property="og:url" content="https://necrometer.dev">
@@ -424,11 +425,29 @@ if (u) { $('subject').value = u; run(u); }
 // corpse ticker — static hall.json regenerated weekly by an Action in this repo.
 fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) => {
   const cls = (h) => h.index >= 80 ? 'doomed' : h.index < 15 ? 'hale' : '';
-  const tape = hall.map((h) =>
-    `<a href="?u=${encodeURIComponent(h.name)}" class="${cls(h)}">☠ ${esc(h.name)} <span class="ix">${h.index}%</span></a><span class="sep">·</span>`
-  ).join('');
-  $('tape1').innerHTML = tape;
-  $('tape2').innerHTML = tape;
+  const buildTape = () => {
+    const frag = document.createDocumentFragment();
+    for (const h of hall) {
+      const a = document.createElement('a');
+      a.href = '?u=' + encodeURIComponent(h.name);
+      a.className = cls(h);
+      a.appendChild(document.createTextNode('☠ '));
+      a.appendChild(document.createTextNode(h.name));
+      a.appendChild(document.createTextNode(' '));
+      const sp = document.createElement('span');
+      sp.className = 'ix';
+      sp.textContent = h.index + '%';
+      a.appendChild(sp);
+      frag.appendChild(a);
+      const sep = document.createElement('span');
+      sep.className = 'sep';
+      sep.textContent = '·';
+      frag.appendChild(sep);
+    }
+    return frag;
+  };
+  $('tape1').replaceChildren(buildTape());
+  $('tape2').replaceChildren(buildTape());
   $('ticker').style.display = 'block';
 }).catch(() => { /* the tape stays hidden */ });
 </script>

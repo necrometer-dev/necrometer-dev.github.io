@@ -1,15 +1,17 @@
 /* @ts-self-types="./necrometer.d.ts" */
+import * as import1 from "./snippets/necrometer-e3032fba2c8ea974/inline0.js"
+
 
 /**
- * repos_json: raw JSON array from api.github.com/.../repos.
- * Returns the reading as JSON (camelCase, matches the old JS engine's shape).
+ * `repos_json`: raw JSON array from `api.github.com/.../repos`.
+ * Returns the reading as JSON.
  * @param {string} subject
  * @param {string} repos_json
  * @returns {string}
  */
 export function analyze_repos(subject, repos_json) {
-    let deferred4_0;
-    let deferred4_1;
+    let deferred3_0;
+    let deferred3_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passStringToWasm0(subject, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -19,32 +21,24 @@ export function analyze_repos(subject, repos_json) {
         wasm.analyze_repos(retptr, ptr0, len0, ptr1, len1);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
-        var ptr3 = r0;
-        var len3 = r1;
-        if (r3) {
-            ptr3 = 0; len3 = 0;
-            throw takeObject(r2);
-        }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred3_0 = r0;
+        deferred3_1 = r1;
+        return getStringFromWasm0(r0, r1);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_export3(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_export3(deferred3_0, deferred3_1, 1);
     }
 }
 
 /**
- * reading_json: a Reading JSON (from analyze_repos, possibly round-tripped).
- * Returns the SVG card.
+ * `reading_json`: a Reading JSON (from analyze_repos, possibly
+ * round-tripped). Returns the SVG card, or "" on parse error.
  * @param {string} reading_json
  * @returns {string}
  */
 export function render_card(reading_json) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred2_0;
+    let deferred2_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passStringToWasm0(reading_json, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -52,64 +46,23 @@ export function render_card(reading_json) {
         wasm.render_card(retptr, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
-        var ptr2 = r0;
-        var len2 = r1;
-        if (r3) {
-            ptr2 = 0; len2 = 0;
-            throw takeObject(r2);
-        }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred2_0 = r0;
+        deferred2_1 = r1;
+        return getStringFromWasm0(r0, r1);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_export3(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_export3(deferred2_0, deferred2_1, 1);
     }
 }
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_throw_5d9e815e6fdf150f: function(arg0, arg1) {
-            throw new Error(getStringFromWasm0(arg0, arg1));
-        },
-        __wbg_getTime_65922ba0b59d55a7: function(arg0) {
-            const ret = getObject(arg0).getTime();
-            return ret;
-        },
-        __wbg_new_0_35540e542ba689d2: function() {
-            const ret = new Date();
-            return addHeapObject(ret);
-        },
-        __wbindgen_generic_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Ref(String) -> Externref`.
-            const ret = getStringFromWasm0(arg0, arg1);
-            return addHeapObject(ret);
-        },
-        __wbindgen_object_drop_ref: function(arg0) {
-            takeObject(arg0);
-        },
     };
     return {
         __proto__: null,
         "./necrometer_bg.js": import0,
+        "./snippets/necrometer-e3032fba2c8ea974/inline0.js": import1,
     };
-}
-
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
-}
-
-function dropObject(idx) {
-    if (idx < 1028) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
 }
 
 let cachedDataViewMemory0 = null;
@@ -131,13 +84,6 @@ function getUint8ArrayMemory0() {
     }
     return cachedUint8ArrayMemory0;
 }
-
-function getObject(idx) { return heap[idx]; }
-
-let heap = new Array(1024).fill(undefined);
-heap.push(undefined, null, true, false);
-
-let heap_next = heap.length;
 
 function passStringToWasm0(arg, malloc, realloc) {
     if (realloc === undefined) {
@@ -174,12 +120,6 @@ function passStringToWasm0(arg, malloc, realloc) {
 
     WASM_VECTOR_LEN = offset;
     return ptr;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
 }
 
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
