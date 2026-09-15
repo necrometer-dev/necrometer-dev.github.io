@@ -6,9 +6,9 @@ const $ = (id) => document.getElementById(id);
 const status = (msg, isErr) => { $('status').textContent = msg; $('status').className = isErr ? 'err' : ''; };
 let current = null, cardUrl = null;
 
-// Fetch is JS-side (browser-native CORS); the necromancy runs in wasm. Falls
-// back to the pure-JS engine (necrometer.js) if wasm can't load.
-let Engine = { analyze: Necrometer.analyze, renderCard: Necrometer.renderCard, engine: 'js' };
+// Fetch is JS-side (browser-native CORS); the necromancy runs in wasm.
+// necrometer.js only exposes fetchRepos — no pure-JS analyze/renderCard.
+let Engine = null;
 try {
   const mod = await import('./pkg/seance.js');
   await mod.default('./pkg/seance_bg.wasm');
@@ -17,7 +17,15 @@ try {
     renderCard: (r) => mod.render_card(JSON.stringify(r)),
     engine: 'rust/wasm',
   };
-} catch (_) { /* pure-JS necromancy */ }
+} catch (e) {
+  // Surface the error rather than silently breaking the form.
+  const msg = 'wasm engine failed to load: ' + (e.message || e) + ' — try refreshing';
+  Engine = {
+    analyze: () => { throw new Error(msg); },
+    renderCard: () => { throw new Error('wasm engine failed to load'); },
+    engine: 'broken',
+  };
+}
 
 const WORKFLOW = () => `name: necrometer
 on:
@@ -111,57 +119,37 @@ $('copywf').addEventListener('click', copier($('workflow')));
 $('copyag').addEventListener('click', copier($('agentrite')));
 $('agentrite').textContent = AGENT_RITE;
 
-function svgToPngBlob(svgString, scale = 2) {
+// Strip SMIL animations so the rasterized card renders in its resting state
+// (needle at true position, EKG fully drawn, heart at full opacity).
+function svgToPngBlob(svg, scale = 2) {
+  const staticSvg = svg.replace(/<animateTransform[\s\S]*?\/>/gi, '').replace(/<animate[\s\S]*?\/>/gi, '');
   return new Promise((resolve, reject) => {
-    // For static rasterization (canvas / PNG), strip SMIL animations so the card renders
-    // in its completed resting state:
-    // 1. Needle points directly to its true calculated position (removes initial -swing rotation)
-    // 2. Heartbeat EKG line is fully visible (removes initial 900 offset)
-    // 3. Pulsing heart icon stays at full opacity
-    const staticSvg = svgString
-      .replace(/<animateTransform[\s\S]*?\/>/gi, '')
-      .replace(/<animate[\s\S]*?\/>/gi, '');
     const img = new Image();
-    const svgBlob = new Blob([staticSvg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    const url = URL.createObjectURL(new Blob([staticSvg], { type: 'image/svg+xml;charset=utf-8' }));
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        canvas.width = 495 * scale;
-        canvas.height = 195 * scale;
+        canvas.width = 495 * scale; canvas.height = 195 * scale;
         const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(url);
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('Canvas toBlob failed'));
-        }, 'image/png');
-      } catch (err) {
-        URL.revokeObjectURL(url);
-        reject(err);
-      }
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/png');
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
     };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to rasterize card SVG'));
-    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to rasterize card SVG')); };
     img.src = url;
   });
 }
 
 function downloadBlob(blob, filename) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(a.href);
-    a.remove();
-  }, 1000);
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
+
+const filenameFor = (ext) => `necrometer-${(current && current.r && current.r.subject) || 'card'}.${ext}`;
 
 $('copycard').addEventListener('click', async () => {
   if (!current || !current.svg) return;
@@ -172,17 +160,13 @@ $('copycard').addEventListener('click', async () => {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       status('card image copied to clipboard — paste into 𝕏 with Ctrl+V');
     } else {
-      downloadBlob(blob, `necrometer-${current.r.subject || 'card'}.png`);
-      status('clipboard image not supported in this browser — downloaded PNG instead');
+      downloadBlob(blob, filenameFor('png'));
+      status('clipboard image not supported — downloaded PNG instead');
     }
   } catch (err) {
-    status('could not copy image to clipboard — downloading PNG instead', true);
-    try {
-      const blob = await svgToPngBlob(current.svg, 2);
-      downloadBlob(blob, `necrometer-${current.r.subject || 'card'}.png`);
-    } catch (_) {
-      status('image render failed: ' + (err.message || err), true);
-    }
+    status('could not copy image — downloading PNG instead', true);
+    try { downloadBlob(await svgToPngBlob(current.svg, 2), filenameFor('png')); }
+    catch (e) { status('image render failed: ' + (e.message || e), true); }
   }
 });
 
@@ -190,18 +174,14 @@ $('downloadcard').addEventListener('click', async () => {
   if (!current || !current.svg) return;
   try {
     status('rendering card image…');
-    const blob = await svgToPngBlob(current.svg, 2);
-    downloadBlob(blob, `necrometer-${current.r.subject || 'card'}.png`);
+    downloadBlob(await svgToPngBlob(current.svg, 2), filenameFor('png'));
     status('card downloaded as PNG');
-  } catch (err) {
-    status('download failed: ' + (err.message || err), true);
-  }
+  } catch (err) { status('download failed: ' + (err.message || err), true); }
 });
 
 $('downloadsvg').addEventListener('click', () => {
   if (!current || !current.svg) return;
-  const blob = new Blob([current.svg], { type: 'image/svg+xml;charset=utf-8' });
-  downloadBlob(blob, `necrometer-${current.r.subject || 'card'}.svg`);
+  downloadBlob(new Blob([current.svg], { type: 'image/svg+xml;charset=utf-8' }), filenameFor('svg'));
   status('card downloaded as SVG');
 });
 
