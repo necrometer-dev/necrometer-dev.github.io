@@ -1,0 +1,1 @@
+export function __necrometer_now() { return Math.floor(Date.now() / 1000); }
