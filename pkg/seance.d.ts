@@ -3,9 +3,9 @@
 
 /**
  * `repos_json`: raw JSON array from `api.github.com/.../repos`.
- * Returns the reading as JSON.
+ * `kind_str`: `"user"` or `"org"`. Returns the reading as JSON.
  */
-export function analyze_repos(subject: string, repos_json: string): string;
+export function analyze_repos(subject: string, kind_str: string, repos_json: string): string;
 
 /**
  * `reading_json`: a Reading JSON (from analyze_repos, possibly
@@ -17,7 +17,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly analyze_repos: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly analyze_repos: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => void;
     readonly render_card: (a: number, b: number, c: number) => void;
     readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
     readonly __wbindgen_export: (a: number, b: number) => number;

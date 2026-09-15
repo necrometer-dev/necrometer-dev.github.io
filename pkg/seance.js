@@ -1,32 +1,35 @@
 /* @ts-self-types="./seance.d.ts" */
-import * as import1 from "./snippets/seance-854c443d04d54ffd/inline0.js"
+import * as import1 from "./snippets/seance-776102c529831abb/inline0.js"
 
 
 /**
  * `repos_json`: raw JSON array from `api.github.com/.../repos`.
- * Returns the reading as JSON.
+ * `kind_str`: `"user"` or `"org"`. Returns the reading as JSON.
  * @param {string} subject
+ * @param {string} kind_str
  * @param {string} repos_json
  * @returns {string}
  */
-export function analyze_repos(subject, repos_json) {
-    let deferred3_0;
-    let deferred3_1;
+export function analyze_repos(subject, kind_str, repos_json) {
+    let deferred4_0;
+    let deferred4_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passStringToWasm0(subject, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(repos_json, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const ptr1 = passStringToWasm0(kind_str, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len1 = WASM_VECTOR_LEN;
-        wasm.analyze_repos(retptr, ptr0, len0, ptr1, len1);
+        const ptr2 = passStringToWasm0(repos_json, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len2 = WASM_VECTOR_LEN;
+        wasm.analyze_repos(retptr, ptr0, len0, ptr1, len1, ptr2, len2);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        deferred3_0 = r0;
-        deferred3_1 = r1;
+        deferred4_0 = r0;
+        deferred4_1 = r1;
         return getStringFromWasm0(r0, r1);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_export3(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_export3(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -61,7 +64,7 @@ function __wbg_get_imports() {
     return {
         __proto__: null,
         "./seance_bg.js": import0,
-        "./snippets/seance-854c443d04d54ffd/inline0.js": import1,
+        "./snippets/seance-776102c529831abb/inline0.js": import1,
     };
 }
 

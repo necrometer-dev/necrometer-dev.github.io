@@ -13,7 +13,7 @@ try {
   const mod = await import('./pkg/seance.js');
   await mod.default('./pkg/seance_bg.wasm');
   Engine = {
-    analyze: (name, repos) => JSON.parse(mod.analyze_repos(name, JSON.stringify(repos))),
+    analyze: (name, kind, repos) => JSON.parse(mod.analyze_repos(name, kind, JSON.stringify(repos))),
     renderCard: (r) => mod.render_card(JSON.stringify(r)),
     engine: 'rust/wasm',
   };
@@ -77,8 +77,13 @@ async function run(name) {
   $('result').style.display = 'none';
   startRites();
   try {
-    const repos = await Necrometer.fetchRepos(name, (n) => { dug += n; });
-    const r = Engine.analyze(name, repos);
+    // Detect user vs org up front so the metrics engine picks the
+    // right title/flavor ("Healthy Churn" for orgs at low index, vs
+    // "The Maintainer" for individuals) and so the right /repos path
+    // is taken (orgs can't use /users/{n}/repos at scale).
+    const kind = await Necrometer.detectKind(name, null);
+    const { repos } = await Necrometer.fetchRepos(name, kind, (n) => { dug += n; });
+    const r = Engine.analyze(name, kind, repos);
     current = { r, svg: Engine.renderCard(r) };
     show(r);
     status('');
