@@ -1,4 +1,4 @@
-name: hall of corpses
+name: ticker census
 
 on:
   schedule: [{cron: "23 4 * * 1"}]   # weekly, Mondays

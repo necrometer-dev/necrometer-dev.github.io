@@ -29,10 +29,10 @@ browser:
 
 ## the ticker
 
-The corpse tape under the logo reads `hall.json` — a weekly census of notable
-accounts (twitter-archive: 100% — a literally dead org). `hall.txt` is the
-input list; `.github/workflows/hall.yml` regenerates the JSON every Monday
-with the release binary.
+The tape under the logo reads `hall.json` — a weekly census of popular,
+currently-active orgs (vercel, openai, rust-lang, kubernetes, …). `hall.txt`
+is the input list; `.github/workflows/hall.yml` regenerates the JSON every
+Monday with the release binary.
 
 ## files
 

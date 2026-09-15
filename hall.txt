@@ -1,28 +1,30 @@
-# hall of corpses — one account per line. Weekly Action rebuilds hall.json.
-# famous personal accounts
-torvalds
-defunkt
-sindresorhus
-tj
-antirez
-mitchellh
-gaearon
-jashkenas
-fabpot
-ruanyf
-kripken
-ssloy
-# orgs known for big footprints
-google
-microsoft
+# ticker census — popular, currently-active orgs (one login per line).
+# Weekly Action rebuilds hall.json. Keep this list recognizable and alive.
+vercel
+openai
+anthropics
+huggingface
+rust-lang
+golang
+kubernetes
+pytorch
 facebook
-twitter-archive
-angular
-spring-projects
-# house accounts
-UberMetroid
-studio2201
-idlescreen
-openOODA
-bumtrips
-necrometer-dev
+microsoft
+google
+github
+nodejs
+denoland
+oven-sh
+vuejs
+sveltejs
+tailwindlabs
+supabase
+cloudflare
+docker
+grafana
+neovim
+stripe
+shopify
+withastro
+expo
+ollama

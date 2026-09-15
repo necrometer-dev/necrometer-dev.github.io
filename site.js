@@ -171,7 +171,7 @@ $('copycard').addEventListener('click', async () => {
 const u = new URLSearchParams(location.search).get('u');
 if (u) { $('subject').value = u; run(u); }
 
-// corpse ticker — static hall.json regenerated weekly by an Action in this repo.
+// ticker — hall.json of popular, currently-active orgs (weekly Action).
 fetch('hall.json').then((r) => r.ok ? r.json() : Promise.reject()).then((hall) => {
   const cls = (h) => h.index >= 80 ? 'doomed' : h.index < 15 ? 'hale' : '';
   const buildTape = () => {
