@@ -19,7 +19,7 @@ if not tag:
 if not url:
     url = f"https://github.com/necrometer-dev/necrometer/releases/tag/{tag}"
 
-display = f"engine {tag.lstrip('v')}"
+display = f"seance {tag.lstrip('v')}"
 path = pathlib.Path("index.html")
 src = path.read_text()
 needle = re.compile(r'<a class="fright" id="rel"[^>]*>[^<]*</a>')
