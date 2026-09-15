@@ -142,15 +142,6 @@ function svgToPngBlob(svg, scale = 2) {
   });
 }
 
-function downloadBlob(blob, filename) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = filename;
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-}
-
-const filenameFor = (ext) => `necrometer-${(current && current.r && current.r.subject) || 'card'}.${ext}`;
-
 $('copycard').addEventListener('click', async () => {
   if (!current || !current.svg) return;
   try {
@@ -160,29 +151,11 @@ $('copycard').addEventListener('click', async () => {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       status('card image copied to clipboard — paste into 𝕏 with Ctrl+V');
     } else {
-      downloadBlob(blob, filenameFor('png'));
-      status('clipboard image not supported — downloaded PNG instead');
+      status('clipboard image not supported in this browser', true);
     }
   } catch (err) {
-    status('could not copy image — downloading PNG instead', true);
-    try { downloadBlob(await svgToPngBlob(current.svg, 2), filenameFor('png')); }
-    catch (e) { status('image render failed: ' + (e.message || e), true); }
+    status('could not copy image: ' + (err.message || err), true);
   }
-});
-
-$('downloadcard').addEventListener('click', async () => {
-  if (!current || !current.svg) return;
-  try {
-    status('rendering card image…');
-    downloadBlob(await svgToPngBlob(current.svg, 2), filenameFor('png'));
-    status('card downloaded as PNG');
-  } catch (err) { status('download failed: ' + (err.message || err), true); }
-});
-
-$('downloadsvg').addEventListener('click', () => {
-  if (!current || !current.svg) return;
-  downloadBlob(new Blob([current.svg], { type: 'image/svg+xml;charset=utf-8' }), filenameFor('svg'));
-  status('card downloaded as SVG');
 });
 
 const u = new URLSearchParams(location.search).get('u');
