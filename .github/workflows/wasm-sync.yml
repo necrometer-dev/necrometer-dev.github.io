@@ -1,0 +1,49 @@
+name: wasm-sync
+
+# Pull pkg/ from necrometer-dev/necrometer (public) when the engine
+# rebuilds wasm. No PAT: this repo's GITHUB_TOKEN can read the public
+# engine repo and write here.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 * * * *"
+  repository_dispatch:
+    types: [wasm-ready]
+
+permissions: { contents: write }
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: necrometer-dev/necrometer
+          path: _engine
+          sparse-checkout: pkg
+          sparse-checkout-cone-mode: false
+      - name: copy pkg
+        run: |
+          set -euo pipefail
+          test -f _engine/pkg/seance_bg.wasm
+          rm -rf pkg
+          mkdir -p pkg
+          cp _engine/pkg/seance.js _engine/pkg/seance.d.ts \
+             _engine/pkg/seance_bg.wasm _engine/pkg/seance_bg.wasm.d.ts pkg/
+          if [ -d _engine/pkg/snippets ]; then
+            cp -a _engine/pkg/snippets pkg/snippets
+          fi
+      - name: commit
+        run: |
+          set -euo pipefail
+          git config user.name "necrometer[bot]"
+          git config user.email "bot@necrometer.dev"
+          git add pkg
+          if git diff --cached --quiet; then
+            echo "pkg already current"
+            exit 0
+          fi
+          git commit -m "wasm: sync pkg from necrometer"
+          git pull --rebase --autostash
+          git push

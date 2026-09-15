@@ -14,7 +14,7 @@ jobs:
       # Single source of truth: bump Cargo.toml in seance and update this.
       NECRO_VERSION: v0.4.5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: summon the necrometer
         run: |
           set -euo pipefail
@@ -32,7 +32,7 @@ jobs:
           set -euo pipefail
           git config user.name "necrometer[bot]"
           git config user.email "bot@necrometer.dev"
-          git pull --rebase --autostash || true
+          git pull --rebase --autostash
           git add hall.json
           git diff --cached --quiet || git commit -m "hall of corpses: $(date +%F)"
           git push

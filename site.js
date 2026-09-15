@@ -36,7 +36,7 @@ jobs:
   necrometer:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: necrometer-dev/necrometer-action@v1
         with:
           # GITHUB_TOKEN covers the current repo and the owner's own private

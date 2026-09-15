@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>necrometer — how dead are your repos?</title>
 <meta name="theme-color" content="#0a0812">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'">
 <meta property="og:title" content="the necrometer">
 <meta property="og:description" content="an instrument for measuring how dead your github repos are">
 <meta property="og:url" content="https://necrometer.dev">
@@ -16,10 +16,15 @@
 <meta name="twitter:description" content="how dead is your github? get a card for your README — carves itself daily, hosted by nobody">
 <meta name="twitter:image" content="https://necrometer.dev/assets/og.png">
 <link rel="icon" type="image/png" href="assets/icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Creepster&family=IM+Fell+English:ital@0;1&family=VT323&display=swap" rel="stylesheet">
 <style>
+@font-face { font-family:'Creepster'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('assets/fonts/creepster.woff2') format('woff2'); }
+@font-face { font-family:'IM Fell English'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('assets/fonts/imfell.woff2') format('woff2'); }
+@font-face { font-family:'IM Fell English'; font-style:italic; font-weight:400; font-display:swap;
+  src:url('assets/fonts/imfell-italic.woff2') format('woff2'); }
+@font-face { font-family:'VT323'; font-style:normal; font-weight:400; font-display:swap;
+  src:url('assets/fonts/vt323.woff2') format('woff2'); }
 :root {
   --bg:#0a0812; --panel:#14101f; --inset:#0c0a16; --border:#322a4d;
   --bone:#e8e4d8; --dim:#8a80a8;
