@@ -12,7 +12,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.NECRO_TOKEN || secrets.GITHUB_TOKEN }}
       # Single source of truth: bump Cargo.toml in seance and update this.
-      NECRO_VERSION: v0.4.6
+      NECRO_VERSION: v0.4.7
     steps:
       - uses: actions/checkout@v5
       - name: summon the necrometer
