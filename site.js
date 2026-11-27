@@ -77,20 +77,24 @@ async function run(rawInput) {
   const hit = cacheGet(name);
   const queryVal = repo ? `${name}/${repo}` : name;
   if (hit) {
+    const commitAudit = repo ? await Necrometer.fetchRepoCommits(name, repo, tok) : null;
     current = { r: hit, svg: Engine.renderCard(hit) };
-    show(hit, repo);
-    status('cached reading — GitHub not contacted');
+    show(hit, repo, commitAudit);
+    status('cached reading — owner repo list reused');
     history.replaceState(null, '', '?u=' + encodeURIComponent(queryVal));
     return;
   }
   startRites();
   try {
     const resolved = await Necrometer.detectKind(name, tok);
-    const { kind, repos } = await Necrometer.fetchRepos(name, resolved, (n) => { dug += n; }, tok);
+    const [{ kind, repos }, commitAudit] = await Promise.all([
+      Necrometer.fetchRepos(name, resolved, (n) => { dug += n; }, tok),
+      repo ? Necrometer.fetchRepoCommits(name, repo, tok) : Promise.resolve(null),
+    ]);
     const r = Engine.analyze(name, kind, repos);
     current = { r, svg: Engine.renderCard(r) };
     cachePut(name, r);
-    show(r, repo);
+    show(r, repo, commitAudit);
     status('');
     history.replaceState(null, '', '?u=' + encodeURIComponent(queryVal));
   } catch (e) {
@@ -105,7 +109,7 @@ async function run(rawInput) {
   }
 }
 
-function show(r, focusedRepo) {
+function show(r, focusedRepo, commitAudit) {
   if (cardUrl) URL.revokeObjectURL(cardUrl);
   cardUrl = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
   $('card').src = cardUrl;
@@ -116,7 +120,7 @@ function show(r, focusedRepo) {
   $('snippet').textContent =
     `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = window.NecroChrome.workflow();
-  if (window.NecroVitality) window.NecroVitality.render(r, focusedRepo);
+  if (window.NecroVitality) window.NecroVitality.render(r, focusedRepo, commitAudit);
   const shareText = r.total === 0
     ? `💀 Inspected @${r.subject} on necrometer.dev — no public repos found.`
     : `💀 @${r.subject} scored ${vitality}% active ("${r.title}") on necrometer.dev — proof of life against AI rot.`;

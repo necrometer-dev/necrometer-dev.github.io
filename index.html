@@ -80,6 +80,13 @@
     <div class="row"><pre id="agentrite" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copyag">copy</button></div>
   </details>
 
+  <details>
+    <summary>how it's scored &amp; known caveats</summary>
+    <p class="dim"><strong>Org &amp; user scoring:</strong> excludes forks and weighs each owned repo by days since last push: alive (&lt;30d, 0.00), cooling (30–179d, 0.33), cold (180–729d, 0.66), dead (&ge;730d, 1.00), and archived (1.00). Vitality = 100% &minus; necrosis.</p>
+    <p class="dim"><strong>Repo check (<code>owner/repo</code>):</strong> inspects the latest 15 commits, strips bot commits (<code>necrometer[bot]</code>, <code>dependabot</code>, <code>renovate</code>, <code>github-actions</code>), and flags &lt;7-day commit bursts.</p>
+    <p class="dim"><strong>Caveats:</strong> finished, bug-free utilities can look quiet without being broken, and archived cleanup counts toward necrosis. Tip: run the daily <code>necrometer.yml</code> workflow in your <code>OWNER/OWNER</code> profile or <code>.github</code> repo so daily card updates don't bump <code>pushed_at</code> on product repos.</p>
+  </details>
+
   <aside class="studio-callout">
     <p><strong>Built by studio2201</strong> — shipping an AI-built app or rescuing a stale codebase?</p>
     <div class="studio-links">
@@ -102,10 +109,10 @@
 <div class="wisp"></div><div class="wisp"></div><div class="wisp"></div>
 <div class="wisp"></div><div class="wisp"></div><div class="wisp"></div>
 
-<script src="necrometer.js"></script>
+<script src="necrometer.js?v=4"></script>
 <script src="chrome.js"></script>
-<script src="vitality.js?v=3"></script>
-<script src="site.js?v=3"></script>
+<script src="vitality.js?v=4"></script>
+<script src="site.js?v=4"></script>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "449ec8f87527412ab0715435321e9ae4"}'></script>
 </body>
 </html>

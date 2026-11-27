@@ -175,8 +175,58 @@
     return { kind, endpoint, repos: out };
   }
 
+  function isBotCommit(c) {
+    if (!c) return false;
+    if (c.author && c.author.type === 'Bot') return true;
+    const login = (c.author && c.author.login) || '';
+    const name = (c.commit && c.commit.author && c.commit.author.name) || '';
+    const email = (c.commit && c.commit.author && c.commit.author.email) || '';
+    return /\[bot\]$/i.test(login) || /\[bot\]$/i.test(name) ||
+      /bot@necrometer\.dev/i.test(email) ||
+      /^(dependabot|renovate|github-actions|necrometer)/i.test(name);
+  }
+
+  async function fetchRepoCommits(owner, repo, token) {
+    if (!owner || !repo) return null;
+    const headers = { Accept: 'application/vnd.github+json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
+    try {
+      const url = `${API}/repos/${enc(owner)}/${enc(repo)}/commits?per_page=15`;
+      const resp = await fetch(url, { headers });
+      if (!resp.ok) return null;
+      const rows = await resp.json();
+      if (!Array.isArray(rows) || rows.length === 0) return null;
+      const humans = [];
+      let botCount = 0;
+      const authors = new Set();
+      for (const c of rows) {
+        if (isBotCommit(c)) { botCount++; continue; }
+        const dtStr = c.commit && c.commit.author && c.commit.author.date;
+        const ts = dtStr ? Date.parse(dtStr) : NaN;
+        if (!Number.isNaN(ts)) humans.push(ts);
+        const who = (c.author && c.author.login) ||
+          (c.commit && c.commit.author && (c.commit.author.email || c.commit.author.name)) || '';
+        if (who) authors.add(who.toLowerCase());
+      }
+      const newest = humans.length ? Math.max(...humans) : null;
+      const oldest = humans.length ? Math.min(...humans) : null;
+      const lastHumanDays = newest == null ? null : Math.max(0, Math.floor((Date.now() - newest) / 86400000));
+      const humanSpanDays = newest == null || oldest == null ? 0 : Math.max(0, Math.floor((newest - oldest) / 86400000));
+      return {
+        totalFetched: rows.length,
+        humanCount: humans.length,
+        botCount,
+        lastHumanDays,
+        humanSpanDays,
+        authorsCount: authors.size,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   return {
-    fetchRepos, detectKind, kindFromUserPayload, KEEP_REPO,
+    fetchRepos, fetchRepoCommits, isBotCommit, detectKind, kindFromUserPayload, KEEP_REPO,
     pagesNeeded, cannotAfford, quotaMessage, limitMessage, peekQuota,
     NotFound, Upstream,
   };

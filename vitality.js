@@ -92,7 +92,19 @@
     container.replaceChildren(a);
   }
 
-  function render(r, focusedRepo) {
+  function formatCommitAudit(ca) {
+    if (!ca) return '';
+    if (ca.humanCount === 0 && ca.botCount > 0) {
+      return ` · ⚠ 0 human commits in latest ${ca.totalFetched} (${ca.botCount} bot-only)`;
+    }
+    const when = ca.lastHumanDays === 0 ? 'today' : ca.lastHumanDays + 'd ago';
+    const span = ca.humanSpanDays < 7 && ca.totalFetched < 15
+      ? ' · <7d burst'
+      : ca.humanSpanDays >= 7 ? ` · ${ca.humanSpanDays}d+ span` : '';
+    return ` · last human commit ${when} · ${ca.authorsCount} human author(s) · ${ca.botCount} bot filtered${span}`;
+  }
+
+  function render(r, focusedRepo, commitAudit) {
     const s = summarize(r);
     const panel = document.getElementById('vitality-panel');
     if (panel) {
@@ -114,10 +126,10 @@
       const children = [head, note, grid];
       if (focusedRepo) {
         const match = (r.entries || []).find((e) => (e.name || '').toLowerCase() === focusedRepo.toLowerCase());
-        const text = match
+        const base = match
           ? `${r.subject}/${match.name}: ${match.fate} · last push ${match.daysIdle}d ago · ${match.stillborn ? 'single-day commit span' : 'sustained history'}`
           : `${r.subject}/${focusedRepo}: not found among owned public repos (forks excluded)`;
-        children.push(el('div', 'repo-focus', text));
+        children.push(el('div', 'repo-focus', base + formatCommitAudit(commitAudit)));
       }
       panel.replaceChildren(...children);
     }
