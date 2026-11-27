@@ -98,6 +98,7 @@ Do NOT create necrometer.svg by hand. The action generates and commits it (necro
     $('copy').addEventListener('click', copier($('snippet')));
     $('copywf').addEventListener('click', copier($('workflow')));
     $('copyag').addEventListener('click', copier($('agentrite')));
+    if ($('copywb')) $('copywb').addEventListener('click', copier($('webbadge')));
     $('agentrite').textContent = AGENT_RITE;
     $('copycard').addEventListener('click', async () => {
       const current = getCurrent();

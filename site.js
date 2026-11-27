@@ -104,15 +104,17 @@ function show(r) {
   if (cardUrl) URL.revokeObjectURL(cardUrl);
   cardUrl = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
   $('card').src = cardUrl;
+  const vitality = r.total === 0 ? 0 : Math.max(0, 100 - r.index);
   $('summary').textContent = r.total === 0
-    ? 'no repos — nothing to bury'
-    : `${r.index}% necrotic — ${r.title} · ${r.total} souls · ${r.starsStranded} stars stranded`;
+    ? 'no repos — nothing to verify'
+    : `${vitality}% active (${r.index}% necrotic) — ${r.title} · ${r.total} repos`;
   $('snippet').textContent =
     `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = window.NecroChrome.workflow();
+  if (window.NecroVitality) window.NecroVitality.render(r);
   const shareText = r.total === 0
-    ? `💀 Examined @${r.subject} on the necrometer — no repos found, nothing to bury.`
-    : `💀 @${r.subject} is ${r.index}% necrotic ("${r.title}") on the necrometer. How dead are your repos?`;
+    ? `💀 Inspected @${r.subject} on necrometer.dev — no public repos found.`
+    : `💀 @${r.subject} scored ${vitality}% active ("${r.title}") on necrometer.dev — proof of life against AI rot.`;
   const shareUrl = `https://necrometer.dev/?u=${encodeURIComponent(r.subject)}`;
   $('share-x').href = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   $('result').style.display = 'block';

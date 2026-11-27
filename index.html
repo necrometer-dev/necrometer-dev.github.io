@@ -3,162 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>necrometer — how dead are your repos?</title>
+<title>necrometer — proof of life against AI rot</title>
 <meta name="theme-color" content="#0a0812">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'">
-<meta property="og:title" content="the necrometer">
-<meta property="og:description" content="an instrument for measuring how dead your github repos are">
+<meta property="og:title" content="necrometer — proof of life against AI rot">
+<meta property="og:description" content="Separate living, actively maintained software from abandoned AI-generated apps. Free client-side GitHub vitality audit &amp; embeddable badges.">
 <meta property="og:url" content="https://necrometer.dev">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://necrometer.dev/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="the necrometer">
-<meta name="twitter:description" content="how dead is your github? get a card for your README — carves itself daily, hosted by nobody">
+<meta name="twitter:title" content="necrometer — proof of life against AI rot">
+<meta name="twitter:description" content="Separate living, actively maintained software from abandoned AI-generated apps. Free client-side GitHub vitality audit &amp; embeddable badges.">
 <meta name="twitter:image" content="https://necrometer.dev/assets/og.png">
 <link rel="icon" type="image/png" href="assets/icon.png">
-<style>
-@font-face { font-family:'Creepster'; font-style:normal; font-weight:400; font-display:swap;
-  src:url('assets/fonts/creepster.woff2') format('woff2'); }
-@font-face { font-family:'IM Fell English'; font-style:normal; font-weight:400; font-display:swap;
-  src:url('assets/fonts/imfell.woff2') format('woff2'); }
-@font-face { font-family:'IM Fell English'; font-style:italic; font-weight:400; font-display:swap;
-  src:url('assets/fonts/imfell-italic.woff2') format('woff2'); }
-@font-face { font-family:'VT323'; font-style:normal; font-weight:400; font-display:swap;
-  src:url('assets/fonts/vt323.woff2') format('woff2'); }
-:root {
-  --bg:#0a0812; --panel:#14101f; --inset:#0c0a16; --border:#322a4d;
-  --bone:#e8e4d8; --dim:#8a80a8;
-  --phos:#7dffa8; --violet:#b78cff; --blood:#ff5470; --candle:#e8b34b; --blue:#6fa8ff;
-}
-* { box-sizing:border-box }
-html { cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Ctext y='21' font-size='21'%3E💀%3C/text%3E%3C/svg%3E") 13 13, auto }
-body { background:var(--bg); color:var(--bone); font-family:'VT323',ui-monospace,monospace; font-size:19px; line-height:1.45; margin:0 }
-/* CRT atmosphere: scanlines + vignette + occasional flicker */
-body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:5;
-  background:repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 1px, transparent 1px 3px) }
-body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:4;
-  background:radial-gradient(ellipse at 50% 30%, transparent 55%, rgba(0,0,0,.6)); animation:flick 7s infinite }
-@keyframes flick { 0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:.85} 94%{opacity:1} 97%{opacity:.93} 98%{opacity:1} }
-input, textarea { cursor:text }
-a { color:var(--violet) } a:hover { color:var(--phos) }
-main { max-width:700px; margin:40px auto; padding:0 16px }
-
-h1 { font-family:'Creepster',cursive; font-weight:400; font-size:54px; margin:0; letter-spacing:3px;
-  text-shadow:0 0 22px rgba(183,140,255,.45) }
-h1 .sk { display:inline-block; animation:sway 5s ease-in-out infinite }
-@keyframes sway { 0%,100%{transform:rotate(-9deg)} 50%{transform:rotate(9deg)} }
-h1 .zap { color:var(--violet); animation:zap 4s infinite }
-@keyframes zap { 0%,100%{opacity:1} 88%{opacity:1} 89%{opacity:.15} 90%{opacity:1} 93%{opacity:.35} 94%{opacity:1} }
-h2 { font-family:'IM Fell English',serif; font-weight:400; font-size:24px; color:var(--candle);
-  letter-spacing:1px; margin:38px 0 6px }
-.tag { color:var(--dim); margin:2px 0 0 }
-.lbl { display:block; color:var(--dim); font-size:15px; letter-spacing:3px; margin-top:26px; text-transform:uppercase }
-
-form { display:flex; gap:10px; margin:6px 0 10px }
-input { background:var(--inset); border:1px solid var(--border); color:var(--phos); padding:10px 14px;
-  border-radius:4px; flex:1; font-family:inherit; font-size:20px; min-width:0;
-  box-shadow:inset 0 0 14px rgba(0,0,0,.65) }
-input::placeholder { color:#4d4570 }
-input:focus { outline:none; border-color:var(--violet);
-  box-shadow:inset 0 0 14px rgba(0,0,0,.65), 0 0 12px rgba(183,140,255,.25) }
-button { font-family:inherit; font-size:20px; background:var(--phos); color:#06130b; border:0;
-  padding:10px 22px; border-radius:4px; cursor:pointer; box-shadow:0 0 16px rgba(125,255,168,.28) }
-button:hover { box-shadow:0 0 24px rgba(125,255,168,.55) }
-button.ghost { background:transparent; color:var(--violet); border:1px solid var(--violet); box-shadow:none }
-button.ghost:hover { background:rgba(183,140,255,.12) }
-
-pre { background:var(--inset); border:1px solid var(--border); padding:12px; border-radius:4px;
-  overflow-x:auto; font-size:16px; white-space:pre-wrap; word-break:break-all; color:var(--phos);
-  box-shadow:inset 0 0 14px rgba(0,0,0,.5) }
-code { background:var(--inset); padding:2px 6px; border-radius:3px; font-size:16px; color:var(--phos) }
-.dim { color:var(--dim); font-size:16px }
-
-/* ticker — stock tape of popular, currently-active orgs */
-.ticker { border-top:1px solid var(--border); border-bottom:1px solid var(--border);
-  background:var(--inset); overflow:hidden; margin:18px 0 4px; padding:7px 0;
-  box-shadow:inset 0 0 14px rgba(0,0,0,.5) }
-.tape { display:inline-flex; white-space:nowrap; animation:tape 75s linear infinite; will-change:transform }
-.ticker:hover .tape { animation-play-state:paused }
-@keyframes tape { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-.tape span { display:inline-block }
-.tape a { color:var(--dim); text-decoration:none; margin-right:34px; font-size:16px; letter-spacing:1px }
-.tape a:hover { color:var(--phos) }
-.tape .ix { color:var(--candle) }
-.tape .doomed .ix { color:var(--blood) }
-.tape .hale .ix { color:var(--phos) }
-.tape .sep { color:#4d4570; margin-right:34px }
-
-#result { display:none }
-.plate { display:inline-block; background:linear-gradient(#3d3320,#241d10); border:1px solid #554524;
-  color:var(--candle); font-size:14px; letter-spacing:4px; padding:2px 16px; border-radius:3px;
-  position:relative; z-index:2; margin:18px 0 -9px 14px }
-.bezel { border:8px solid #1c1626; border-radius:10px; padding:10px; background:var(--inset);
-  box-shadow:0 0 0 1px var(--border), 0 0 34px rgba(183,140,255,.12), inset 0 0 26px rgba(0,0,0,.7) }
-.bezel img { display:block; width:100%; border-radius:4px }
-
-table { width:100%; border-collapse:collapse; font-size:17px; margin-top:8px }
-th { text-align:left; color:var(--candle); font-weight:400; padding:6px 8px;
-  border-bottom:1px solid var(--border); font-family:'IM Fell English',serif; letter-spacing:1px }
-td { padding:6px 8px; border-bottom:1px solid #1e1830 }
-.steps { counter-reset:step; padding-left:0; list-style:none }
-.steps li { margin:16px 0; padding-left:32px; position:relative }
-.steps li::before { counter-increment:step; content:counter(step); position:absolute; left:0; top:3px;
-  width:20px; height:20px; background:var(--inset); border:1px solid var(--violet); border-radius:50%;
-  font-size:14px; display:flex; align-items:center; justify-content:center; color:var(--violet) }
-details { margin-top:26px; border:1px solid var(--border); border-radius:6px; padding:12px 16px; background:var(--panel) }
-summary { cursor:pointer; color:var(--bone) }
-details.ward { margin:8px 0 0; border:0; background:transparent; padding:0 }
-details.ward summary { color:var(--dim); font-size:15px }
-details.ward input { margin-top:8px; width:min(420px,100%) }
-.row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 }
-.card-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:12px 0 20px; flex-wrap:wrap }
-.card-bar #summary { margin:0; flex:1; min-width:200px }
-.card-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
-.btn-action, .btn-x {
-  display:inline-flex; align-items:center; gap:7px;
-  background:var(--panel); color:var(--bone);
-  border:1px solid var(--border); border-radius:4px;
-  padding:7px 13px; font-family:inherit; font-size:17px;
-  text-decoration:none; cursor:pointer;
-  white-space:nowrap;
-  box-shadow:inset 0 0 10px rgba(0,0,0,.5);
-  transition:all .15s ease;
-}
-.btn-action:hover, .btn-x:hover {
-  color:var(--phos); border-color:var(--violet);
-  background:rgba(183,140,255,.12);
-  box-shadow:0 0 16px rgba(183,140,255,.25), inset 0 0 10px rgba(0,0,0,.5);
-}
-.btn-action svg, .btn-x svg { width:15px; height:15px; fill:currentColor }
-#status { color:var(--phos); font-size:17px }
-#status:not(:empty) { min-height:24px }
-#status.err { color:var(--blood) }
-#status:not(:empty)::after { content:' ▌'; animation:blink 1s steps(1) infinite }
-@keyframes blink { 50%{opacity:0} }
-footer { margin:56px 0 24px; color:var(--dim); font-size:15px; border-top:1px solid var(--border); padding-top:16px; display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap }
-footer .fleft { flex:1; min-width:0 }
-footer .fright { color:var(--candle); text-decoration:none; font-family:var(--mono); font-size:13px; padding:4px 10px; border:1px solid var(--border); border-radius:4px; background:rgba(232,179,75,0.06); white-space:nowrap; flex-shrink:0 }
-footer .fright:hover { color:var(--blood); border-color:var(--candle) }
-footer .fright[hidden] { display:none }
-footer .fright::before { content:"⚰ "; opacity:0.7 }
-
-/* spirit wisps */
-.wisp { position:fixed; bottom:-10px; border-radius:50%; background:var(--violet); opacity:0;
-  filter:blur(1.5px); animation:rise 11s linear infinite; z-index:3; pointer-events:none }
-.wisp:nth-child(1) { left:8%;  width:5px; height:5px; animation-delay:0s }
-.wisp:nth-child(2) { left:22%; width:4px; height:4px; animation-delay:3s;  animation-duration:13s }
-.wisp:nth-child(3) { left:41%; width:6px; height:6px; animation-delay:6s;  animation-duration:10s }
-.wisp:nth-child(4) { left:58%; width:4px; height:4px; animation-delay:1.5s; animation-duration:14s }
-.wisp:nth-child(5) { left:74%; width:5px; height:5px; animation-delay:8s;  animation-duration:12s }
-.wisp:nth-child(6) { left:90%; width:4px; height:4px; animation-delay:4.5s; animation-duration:9s }
-@keyframes rise { 0%{transform:translateY(0);opacity:0} 12%{opacity:.45} 85%{opacity:.25}
-  100%{transform:translateY(-105vh) translateX(36px);opacity:0} }
-</style>
+<link rel="stylesheet" href="site.css?v=2">
 </head>
 <body>
 <main>
   <h1><span class="sk">💀</span> NECR<span class="zap">O</span>METER</h1>
-  <p class="tag">an instrument for measuring how dead your code is.</p>
+  <p class="tag">proof of life against AI rot — verify a team is still maintaining its code.</p>
+  <p class="explain">Anyone can ship an AI-generated app in a weekend and walk away. Inspect real commit vitality, spot one-shot dumps, and embed a live trust badge.</p>
 
   <div class="ticker" id="ticker" style="display:none">
     <div class="tape"><span id="tape1"></span><span id="tape2"></span></div>
@@ -166,11 +30,11 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
 
   <label class="lbl" for="subject">subject for examination</label>
   <form id="f">
-    <input id="subject" placeholder="whose soul shall we weigh?" autofocus autocomplete="off">
-    <button type="submit">exhume</button>
+    <input id="subject" placeholder="GitHub user or org (e.g. studio2201)" autofocus autocomplete="off">
+    <button type="submit">inspect</button>
   </form>
   <details class="ward" id="token-box">
-    <summary>anonymous GitHub cap is 60 calls/hour — paste a token to exhume google-sized orgs</summary>
+    <summary>anonymous GitHub cap is 60 calls/hour — paste a token to inspect large orgs</summary>
     <input id="token" type="password" placeholder="ghp_… public repo read is enough" autocomplete="off" spellcheck="false">
   </details>
   <div id="status"></div>
@@ -192,7 +56,14 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
       </div>
     </div>
 
-    <h2>the ritual — bind it to your README</h2>
+    <div id="vitality-panel" class="audit-panel" aria-live="polite"></div>
+
+    <h2>embed on your website — proof-of-life badge</h2>
+    <p class="dim">Show visitors your app is actively maintained and links straight to a live verification audit:</p>
+    <div class="badge-preview" id="webbadge-preview"></div>
+    <div class="row"><pre id="webbadge" style="flex:1;margin:6px 0"></pre><button class="ghost" id="copywb">copy</button></div>
+
+    <h2>the ritual — bind the card to your README</h2>
     <ol class="steps">
       <li>inscribe the ward: paste this into <code>.github/workflows/necrometer.yml</code> — it carves the card and re-carves it daily (run once from the Actions tab to see it now):
         <div class="row"><pre id="workflow" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copywf">copy</button></div>
@@ -201,7 +72,6 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
         <div class="row"><pre id="snippet" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copy">copy</button></div>
       </li>
     </ol>
-
   </section>
 
   <details>
@@ -210,10 +80,19 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
     <div class="row"><pre id="agentrite" style="flex:1;margin:8px 0"></pre><button class="ghost" id="copyag">copy</button></div>
   </details>
 
+  <aside class="studio-callout">
+    <p><strong>Built by studio2201</strong> — shipping an AI-built app or rescuing a stale codebase?</p>
+    <div class="studio-links">
+      <a href="https://studio2201.com/tools" target="_blank" rel="noopener">AI-Code Hardening &amp; Tools →</a>
+      <a href="https://studio2201.com/#contact" target="_blank" rel="noopener">Hire Studio 2201 →</a>
+    </div>
+  </aside>
+
   <footer>
     <div class="fleft">
       necrometer.dev — conjured client-side; your api calls go straight to github.
-      no servers were harmed. they were already dead.<br>
+      no servers were harmed.<br>
+      built by <a href="https://studio2201.com">studio2201.com</a> ·
       source: <a href="https://github.com/necrometer-dev/necrometer-dev.github.io">necrometer-dev</a>
     </div>
     <a class="fright" id="rel" href="https://github.com/necrometer-dev/necrometer/releases/tag/v0.4.8">seance 0.4.8</a>
@@ -225,7 +104,8 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
 
 <script src="necrometer.js"></script>
 <script src="chrome.js"></script>
-<script src="site.js"></script>
+<script src="vitality.js?v=2"></script>
+<script src="site.js?v=2"></script>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "449ec8f87527412ab0715435321e9ae4"}'></script>
 </body>
 </html>

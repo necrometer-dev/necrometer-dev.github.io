@@ -37,10 +37,12 @@ Monday with the release binary.
 ## files
 
 ```
-index.html       the whole page — haunted CRT, fonts, ritual logic
+index.html       the whole page — proof-of-life CRT, fonts, ritual logic
+site.css         CRT styling, Proof-of-Life audit panel, badge preview
 necrometer.js    GitHub fetch + quota (analysis/render is wasm)
 chrome.js        ticker, copy/share, install-rite text
-site.js          wasm glue + search → #card
+vitality.js      Proof-of-Life verdict summary & website badge snippet
+site.js          wasm glue + search → #card & #vitality-panel
 pkg/             wasm build of the Rust engine (generated — don't edit)
 agents.md        the install rite, written for coding agents to fetch
 hall.txt         names for the weekly census
