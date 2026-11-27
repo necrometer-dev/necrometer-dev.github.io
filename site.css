@@ -124,12 +124,6 @@ details.ward input { margin-top:8px; width:min(420px,100%) }
   padding:12px 14px; background:var(--inset); border:1px solid var(--border);
   border-radius:4px; margin:10px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
 }
-.studio-callout {
-  margin-top:28px; border:1px solid var(--border); border-left:3px solid var(--candle);
-  border-radius:6px; padding:14px 16px; background:var(--panel);
-}
-.studio-callout p { margin:0 0 10px }
-.studio-links { display:flex; gap:14px; flex-wrap:wrap; font-size:17px }
 
 #status { color:var(--phos); font-size:17px }
 #status:not(:empty) { min-height:24px }
