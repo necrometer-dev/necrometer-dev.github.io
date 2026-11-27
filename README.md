@@ -2,7 +2,7 @@
 
 # ☠ necrometer.dev
 
-**the instrument itself — a static site that judges the dead.**
+**proof of life against AI rot — static GitHub repo & org vitality audit.**
 
 [![Necrometer](necrometer.svg)](https://necrometer.dev/?u=necrometer-dev)
 
@@ -16,16 +16,23 @@ This repo *is* the website. Static GitHub Pages — there is no backend, no
 database, no per-user image hosting. Everything happens in the visitor's
 browser:
 
-1. `necrometer.js` fetches repos straight from `api.github.com` (CORS-allowed,
-   parallel pagination)
-2. the **Rust/WASM engine** (`pkg/`, built from
+1. `necrometer.js` fetches public repos straight from `api.github.com`
+   (CORS-allowed, parallel pagination). When given a GitHub URL or
+   `owner/repo`, it also inspects the latest 10 commits and filters out
+   automated bots (`necrometer[bot]`, `dependabot`, `renovate`,
+   `github-actions`) to report the last real human commit.
+2. The **Rust/WASM engine** (`pkg/`, built from
    [necrometer-dev/necrometer](https://github.com/necrometer-dev/necrometer))
-   analyzes the bodies and renders the card — pure JS fallback if wasm fails
-3. you copy a **workflow** — three lines calling
+   analyzes repo fates and renders the SVG card client-side. `vitality.js`
+   translates the reading into a Proof-of-Life verdict (`VERIFIED ACTIVE`,
+   `TOO NEW TO VERIFY`, `MIXED MAINTENANCE`, or `AI-ROT / ABANDONMENT RISK`)
+   and generates a tamper-proof live-check website badge snippet.
+3. You copy a **workflow** — three lines calling
    [`necrometer-dev/necrometer-action`](https://github.com/necrometer-dev/necrometer-action),
    which downloads the pinned, checksum-verified release binary and re-commits
-   `necrometer.svg` to *your* repo daily. GitHub runs the compute; we host
-   nothing.
+   `necrometer.svg` to *your* profile repo daily. Placing it in your profile
+   repo avoids adding daily bot commits to product repos. GitHub runs the
+   compute; we host nothing.
 
 ## the ticker
 
