@@ -12,7 +12,6 @@
   --phos:#7dffa8; --violet:#b78cff; --blood:#ff5470; --candle:#e8b34b; --blue:#6fa8ff;
 }
 * { box-sizing:border-box }
-html { cursor:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Ctext y='21' font-size='21'%3E💀%3C/text%3E%3C/svg%3E") 13 13, auto }
 body { background:var(--bg); color:var(--bone); font-family:'VT323',ui-monospace,monospace; font-size:19px; line-height:1.45; margin:0 }
 body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:5;
   background:repeating-linear-gradient(0deg, rgba(0,0,0,.25) 0 1px, transparent 1px 3px) }
@@ -153,4 +152,8 @@ footer .fright::before { content:"⚰ "; opacity:0.7 }
 .wisp:nth-child(5) { left:74%; width:5px; height:5px; animation-delay:8s; animation-duration:12s }
 .wisp:nth-child(6) { left:90%; width:4px; height:4px; animation-delay:4.5s; animation-duration:9s }
 @keyframes rise { 0%{transform:translateY(0);opacity:0} 12%{opacity:.45} 85%{opacity:.25} 100%{transform:translateY(-105vh) translateX(36px);opacity:0} }
+@media (prefers-reduced-motion:reduce) {
+  body::after, h1 .sk, h1 .zap, .tape, .wisp, #status:not(:empty)::after { animation:none }
+  .wisp { display:none }
+}
 @media (max-width:600px) { .audit-grid { grid-template-columns:repeat(2, minmax(0,1fr)) } }

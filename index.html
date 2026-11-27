@@ -16,7 +16,7 @@
 <meta name="twitter:description" content="Separate living, actively maintained software from abandoned AI-generated apps. Free client-side GitHub vitality audit &amp; embeddable badges.">
 <meta name="twitter:image" content="https://necrometer.dev/assets/og.png">
 <link rel="icon" type="image/png" href="assets/icon.png">
-<link rel="stylesheet" href="site.css?v=3">
+<link rel="stylesheet" href="site.css?v=4">
 </head>
 <body>
 <main>
@@ -36,6 +36,7 @@
   <details class="ward" id="token-box">
     <summary>anonymous GitHub cap is 60 calls/hour — paste a token to inspect large orgs</summary>
     <input id="token" type="password" placeholder="ghp_… public repo read is enough" autocomplete="off" spellcheck="false">
+    <p class="dim" style="margin:6px 0 0">Stays in <code>sessionStorage</code> only; browser CSP locks requests to <code>api.github.com</code> (verify in DevTools).</p>
   </details>
   <div id="status"></div>
 
@@ -113,6 +114,5 @@
 <script src="chrome.js"></script>
 <script src="vitality.js?v=4"></script>
 <script src="site.js?v=4"></script>
-<script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "449ec8f87527412ab0715435321e9ae4"}'></script>
 </body>
 </html>
