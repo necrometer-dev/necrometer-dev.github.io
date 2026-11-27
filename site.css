@@ -115,6 +115,11 @@ details.ward input { margin-top:8px; width:min(420px,100%) }
 .audit-stat { background:var(--inset); border:1px solid var(--border); border-radius:4px; padding:8px 10px }
 .audit-stat b { display:block; color:var(--bone); font-weight:400; font-size:21px }
 .audit-stat span { color:var(--dim); font-size:14px; text-transform:uppercase; letter-spacing:1px }
+.repo-focus {
+  margin-top:10px; padding:8px 10px; background:var(--inset);
+  border:1px solid var(--border); border-left:3px solid var(--violet);
+  border-radius:4px; font-size:16px; color:var(--bone);
+}
 
 .badge-preview {
   padding:12px 14px; background:var(--inset); border:1px solid var(--border);

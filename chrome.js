@@ -70,12 +70,13 @@ Do NOT create necrometer.svg by hand. The action generates and commits it (necro
           const a = document.createElement('a');
           a.href = '?u=' + encodeURIComponent(h.name);
           a.className = cls(h);
+          a.title = h.name + ': ' + h.index + '% necrotic (' + Math.max(0, 100 - h.index) + '% active)';
           a.appendChild(document.createTextNode('☠ '));
           a.appendChild(document.createTextNode(h.name));
           a.appendChild(document.createTextNode(' '));
           const sp = document.createElement('span');
           sp.className = 'ix';
-          sp.textContent = h.index + '%';
+          sp.textContent = h.index + '% dead';
           a.appendChild(sp);
           frag.appendChild(a);
           const sep = document.createElement('span');

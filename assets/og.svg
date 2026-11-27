@@ -19,6 +19,6 @@
   <ellipse cx="705" cy="252" rx="21" ry="11.5" fill="#ffb0c0" opacity="0.55"/>
   <!-- wordmark — O in phosphor like the flickering site logo -->
   <text x="640" y="478" text-anchor="middle" font-family="Creepster" font-size="148" letter-spacing="8" fill="#e8e4d8">NECR<tspan fill="#7dffa8">O</tspan>METER</text>
-  <text x="640" y="556" text-anchor="middle" font-family="VT323" font-size="52" fill="#b78cff">how dead is your github?</text>
+  <text x="640" y="556" text-anchor="middle" font-family="VT323" font-size="52" fill="#b78cff">proof of life against AI rot</text>
   <text x="640" y="606" text-anchor="middle" font-family="VT323" font-size="30" fill="#565c66">necrometer.dev</text>
 </svg>

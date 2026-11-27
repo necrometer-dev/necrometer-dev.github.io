@@ -16,7 +16,7 @@
 <meta name="twitter:description" content="Separate living, actively maintained software from abandoned AI-generated apps. Free client-side GitHub vitality audit &amp; embeddable badges.">
 <meta name="twitter:image" content="https://necrometer.dev/assets/og.png">
 <link rel="icon" type="image/png" href="assets/icon.png">
-<link rel="stylesheet" href="site.css?v=2">
+<link rel="stylesheet" href="site.css?v=3">
 </head>
 <body>
 <main>
@@ -30,7 +30,7 @@
 
   <label class="lbl" for="subject">subject for examination</label>
   <form id="f">
-    <input id="subject" placeholder="GitHub user or org (e.g. studio2201)" autofocus autocomplete="off">
+    <input id="subject" placeholder="GitHub user, org, or URL (e.g. studio2201/snip)" autofocus autocomplete="off">
     <button type="submit">inspect</button>
   </form>
   <details class="ward" id="token-box">
@@ -59,7 +59,7 @@
     <div id="vitality-panel" class="audit-panel" aria-live="polite"></div>
 
     <h2>embed on your website — proof-of-life badge</h2>
-    <p class="dim">Show visitors your app is actively maintained and links straight to a live verification audit:</p>
+    <p class="dim">Links visitors straight to a live GitHub check so scores cannot be faked (or use the daily README action below for auto-updated SVG):</p>
     <div class="badge-preview" id="webbadge-preview"></div>
     <div class="row"><pre id="webbadge" style="flex:1;margin:6px 0"></pre><button class="ghost" id="copywb">copy</button></div>
 
@@ -104,8 +104,8 @@
 
 <script src="necrometer.js"></script>
 <script src="chrome.js"></script>
-<script src="vitality.js?v=2"></script>
-<script src="site.js?v=2"></script>
+<script src="vitality.js?v=3"></script>
+<script src="site.js?v=3"></script>
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "449ec8f87527412ab0715435321e9ae4"}'></script>
 </body>
 </html>

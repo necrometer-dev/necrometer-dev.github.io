@@ -65,17 +65,22 @@ function cachePut(name, reading) {
   catch (_) { /* quota */ }
 }
 
-async function run(name) {
-  name = name.trim().replace(/^@/, '');
+async function run(rawInput) {
+  const parsed = window.NecroVitality
+    ? window.NecroVitality.parseSubject(rawInput)
+    : { owner: rawInput.trim().replace(/^@+/, ''), repo: null };
+  const name = parsed.owner;
+  const repo = parsed.repo;
   if (!name) return;
   $('result').style.display = 'none';
   const tok = token();
   const hit = cacheGet(name);
+  const queryVal = repo ? `${name}/${repo}` : name;
   if (hit) {
     current = { r: hit, svg: Engine.renderCard(hit) };
-    show(hit);
+    show(hit, repo);
     status('cached reading — GitHub not contacted');
-    history.replaceState(null, '', '?u=' + encodeURIComponent(name));
+    history.replaceState(null, '', '?u=' + encodeURIComponent(queryVal));
     return;
   }
   startRites();
@@ -85,9 +90,9 @@ async function run(name) {
     const r = Engine.analyze(name, kind, repos);
     current = { r, svg: Engine.renderCard(r) };
     cachePut(name, r);
-    show(r);
+    show(r, repo);
     status('');
-    history.replaceState(null, '', '?u=' + encodeURIComponent(name));
+    history.replaceState(null, '', '?u=' + encodeURIComponent(queryVal));
   } catch (e) {
     const msg = e.message || String(e);
     status(msg, true);
@@ -100,7 +105,7 @@ async function run(name) {
   }
 }
 
-function show(r) {
+function show(r, focusedRepo) {
   if (cardUrl) URL.revokeObjectURL(cardUrl);
   cardUrl = URL.createObjectURL(new Blob([current.svg], { type: 'image/svg+xml' }));
   $('card').src = cardUrl;
@@ -111,11 +116,12 @@ function show(r) {
   $('snippet').textContent =
     `[![Necrometer](necrometer.svg)](https://necrometer.dev/?u=${encodeURIComponent(r.subject)})`;
   $('workflow').textContent = window.NecroChrome.workflow();
-  if (window.NecroVitality) window.NecroVitality.render(r);
+  if (window.NecroVitality) window.NecroVitality.render(r, focusedRepo);
   const shareText = r.total === 0
     ? `💀 Inspected @${r.subject} on necrometer.dev — no public repos found.`
     : `💀 @${r.subject} scored ${vitality}% active ("${r.title}") on necrometer.dev — proof of life against AI rot.`;
-  const shareUrl = `https://necrometer.dev/?u=${encodeURIComponent(r.subject)}`;
+  const shareTarget = focusedRepo ? `${r.subject}/${focusedRepo}` : r.subject;
+  const shareUrl = `https://necrometer.dev/?u=${encodeURIComponent(shareTarget)}`;
   $('share-x').href = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   $('result').style.display = 'block';
 }

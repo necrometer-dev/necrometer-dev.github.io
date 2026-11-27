@@ -1,4 +1,4 @@
-// vitality.js — Proof-of-Life Audit & Website Badge generator (<= 256 LOC)
+// vitality.js — Proof-of-Life Audit, URL parser & Website Badge (<= 256 LOC)
 (function (w) {
   function escHtml(s) {
     return String(s || '')
@@ -8,6 +8,19 @@
       .replace(/"/g, '&quot;');
   }
 
+  function parseSubject(raw) {
+    let s = String(raw || '').trim().replace(/^@+/, '');
+    if (!s) return { owner: '', repo: null };
+    s = s.replace(/^https?:\/\/(www\.)?github\.com\//i, '')
+      .replace(/^(www\.)?github\.com\//i, '')
+      .replace(/[?#].*$/, '')
+      .replace(/\/+$/, '');
+    const parts = s.split('/').filter(Boolean);
+    const owner = parts[0] || '';
+    const repo = parts[1] ? parts[1].replace(/\.git$/i, '') : null;
+    return { owner, repo };
+  }
+
   function summarize(r) {
     const total = r.total || 0;
     const vitality = total === 0 ? 0 : Math.max(0, 100 - (r.index || 0));
@@ -15,16 +28,23 @@
     let sustained = 0;
     let oneShot = 0;
     for (const e of entries) {
-      if (e.stillborn) oneShot++;
-      else if (e.fate === 'alive' || e.fate === 'cooling') sustained++;
+      if (e.stillborn) {
+        if (e.fate !== 'alive') oneShot++;
+      } else if (e.fate === 'alive' || e.fate === 'cooling') {
+        sustained++;
+      }
     }
     const d = r.daysSinceAnyPush;
     const lastPush = d == null ? 'never' : d === 0 ? 'today' : d + 'd ago';
+    const aliveCount = (r.counts && r.counts[0]) || 0;
 
     let verdict;
     if (total === 0) {
       verdict = { cls: 'rot', label: 'NO PUBLIC REPOS', color: '#ff5470',
         note: 'No owned public repositories found to verify.' };
+    } else if (r.lowSample && sustained === 0 && aliveCount > 0) {
+      verdict = { cls: 'mixed', label: 'TOO NEW TO VERIFY', color: '#e8b34b',
+        note: 'Freshly created (<24h commit span). Check back after sustained commits across multiple days to prove it is not a weekend dump.' };
     } else if (vitality >= 70 && d != null && d <= 30 && sustained > 0) {
       verdict = { cls: 'alive', label: 'VERIFIED ACTIVE', color: '#7dffa8',
         note: 'Sustained maintenance signal — active commits beyond one-shot weekend dumps.' };
@@ -39,11 +59,15 @@
     return { total, vitality, sustained, oneShot, lastPush, verdict };
   }
 
-  function badgeHtml(r, s) {
-    const u = encodeURIComponent(r.subject || '');
+  function targetParam(r, focusedRepo) {
+    const owner = String(r.subject || '');
+    return focusedRepo ? `${owner}/${focusedRepo}` : owner;
+  }
+
+  function badgeHtml(r, _s, focusedRepo) {
+    const u = encodeURIComponent(targetParam(r, focusedRepo));
     const href = `https://necrometer.dev/?u=${u}`;
-    const label = escHtml(`${s.vitality}% Active`);
-    return `<a href="${href}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#0c0a16;border:1px solid #322a4d;color:#e8e4d8;font:13px/1.2 ui-monospace,monospace;text-decoration:none"><span style="width:8px;height:8px;border-radius:50%;background:${s.verdict.color};display:inline-block"></span><span>Proof of Life: ${label}</span><span style="color:#8a80a8">· necrometer.dev</span></a>`;
+    return `<a href="${href}" target="_blank" rel="noopener" title="Check live repository vitality on necrometer.dev" style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#0c0a16;border:1px solid #322a4d;color:#e8e4d8;font:13px/1.2 ui-monospace,monospace;text-decoration:none"><span style="width:8px;height:8px;border-radius:50%;background:#7dffa8;display:inline-block"></span><span>Proof of Life</span><span style="color:#8a80a8">· Verify live on necrometer.dev →</span></a>`;
   }
 
   function el(tag, cls, text) {
@@ -53,22 +77,22 @@
     return node;
   }
 
-  function renderPreview(container, r, s) {
+  function renderPreview(container, r, s, focusedRepo) {
     const a = document.createElement('a');
-    a.href = `https://necrometer.dev/?u=${encodeURIComponent(r.subject || '')}`;
+    a.href = `https://necrometer.dev/?u=${encodeURIComponent(targetParam(r, focusedRepo))}`;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#0c0a16;border:1px solid #322a4d;color:#e8e4d8;font:13px/1.2 ui-monospace,monospace;text-decoration:none';
     const dot = document.createElement('span');
-    dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${s.verdict.color};display:inline-block`;
-    const main = el('span', '', `Proof of Life: ${s.vitality}% Active`);
-    const tag = el('span', '', '· necrometer.dev');
+    dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#7dffa8;display:inline-block';
+    const main = el('span', '', 'Proof of Life');
+    const tag = el('span', '', '· Verify live on necrometer.dev →');
     tag.style.color = '#8a80a8';
     a.append(dot, main, tag);
     container.replaceChildren(a);
   }
 
-  function render(r) {
+  function render(r, focusedRepo) {
     const s = summarize(r);
     const panel = document.getElementById('vitality-panel');
     if (panel) {
@@ -87,14 +111,22 @@
         box.append(el('b', '', v), el('span', '', k));
         grid.appendChild(box);
       }
-      panel.replaceChildren(head, note, grid);
+      const children = [head, note, grid];
+      if (focusedRepo) {
+        const match = (r.entries || []).find((e) => (e.name || '').toLowerCase() === focusedRepo.toLowerCase());
+        const text = match
+          ? `${r.subject}/${match.name}: ${match.fate} · last push ${match.daysIdle}d ago · ${match.stillborn ? 'single-day commit span' : 'sustained history'}`
+          : `${r.subject}/${focusedRepo}: not found among owned public repos (forks excluded)`;
+        children.push(el('div', 'repo-focus', text));
+      }
+      panel.replaceChildren(...children);
     }
 
     const preview = document.getElementById('webbadge-preview');
-    if (preview) renderPreview(preview, r, s);
+    if (preview) renderPreview(preview, r, s, focusedRepo);
     const code = document.getElementById('webbadge');
-    if (code) code.textContent = badgeHtml(r, s);
+    if (code) code.textContent = badgeHtml(r, s, focusedRepo);
   }
 
-  w.NecroVitality = { summarize, badgeHtml, render };
+  w.NecroVitality = { parseSubject, summarize, badgeHtml, render };
 })(window);
